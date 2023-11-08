@@ -37,7 +37,7 @@ def blobProperties(contours):
 
         # Determines the area of the blob in order to avoid processing those too small to be fish
         area = cv2.contourArea(contourPixels)
-        if area > 10000:
+        if area > 20000:
             # Finds the center and radius of the minimum enclosing circle
             (xc, yc), radius = cv2.minEnclosingCircle(contourPixels)
             # Pixel points have to be round numbers
@@ -125,13 +125,13 @@ def findSize(image):
 
         cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
-        cv2.line(imagePlot, ellipsePoints[0], ellipsePointsCorrected, (230, 230, 230), 2)
+        #cv2.line(imagePlot, ellipsePoints[0], ellipsePointsCorrected, (230, 230, 230), 2)
 
         directionPoint = (round(math.cos(ellipseAngle) * 1000 + averagePoint[0]), -round(math.sin(ellipseAngle) * 1000+ averagePoint[1]))
 
         print(directionPoint)
 
-        cv2.line(imagePlot, averagePoint, directionPoint, (255, 255, 255), 2)
+        #cv2.line(imagePlot, averagePoint, directionPoint, (255, 255, 255), 2)
 
 
 
@@ -152,8 +152,6 @@ def findSize(image):
         #cv2.circle(imagePlot, centre, radius, invertedColors[i], 2)  # Minimum Enclosing Circle
         cv2.ellipse(imagePlot, (ellipsePoints[0], ellipsePoints[1], ellipseAngle), invertedColors[i], 2)  # Fitted ellipse
 
-        break
-
 
 
         lineColor = singleRGBcolor(255)
@@ -172,12 +170,13 @@ def findSize(image):
         lenght2MaxY = math.sqrt((maximumPointY[0] - averagePoint[0]) ** 2 + (maximumPointY[1] - averagePoint[1]) ** 2)
 
         lenghts = [lenght2MinX, lenght2MaxX, lenght2MinY, lenght2MaxY]
-        totalLenght = sum(sorted(lenghts)[2:])
-        print("Totallenght: ", totalLenght)
+        totalLenght = float(sum(sorted(lenghts)[2:]))
+        convertedLenght = float((totalLenght*0.4)/10)
+        print("Totallenght: ", totalLenght, "Converted lenght: ", convertedLenght)
 
-        cv2.putText(imagePlot, str(round(totalLenght)), averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+        cv2.putText(imagePlot, str(convertedLenght)+"CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
                     (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(totalLenght)), averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+        cv2.putText(imagePlot, str(convertedLenght)+"CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
                     (255, 255, 255), 2, cv2.LINE_AA)
 
 
@@ -189,14 +188,14 @@ def findSize(image):
 
         fishLenght.append(totalLenght)
 
-        if i == 40:
-            """print("Center: ", centre)
-            print("Average: ", positions[i][4][0])
-            print("minPosX: ", positions[i][0][0])
-            print("maxPosX: ", positions[i][1][0])
-            print("minPosY: ", positions[i][2][0])
-            print("maxPosY: ", positions[i][3][0])"""
-            break
+
+        """print("Center: ", centre)
+        print("Average: ", positions[i][4][0])
+        print("minPosX: ", positions[i][0][0])
+        print("maxPosX: ", positions[i][1][0])
+        print("minPosY: ", positions[i][2][0])
+        print("maxPosY: ", positions[i][3][0])"""
+
 
     print(fishLenght)
     showImage(imagePlot)
