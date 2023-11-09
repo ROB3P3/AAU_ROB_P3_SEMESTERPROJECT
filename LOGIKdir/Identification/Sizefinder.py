@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 import math
-
-imageBinary = cv2.imread(r"DATAdir/RGB/tiff/00016binary.tiff", cv2.IMREAD_UNCHANGED)
+import IsolatingFish
 
 
 def showImage(image):
@@ -45,14 +44,11 @@ def blobProperties(contours):
 
             # Fit an ellipce around the blob. Get
             ellipse = cv2.fitEllipse(contourPixels)
-            ellipsePoints = ((round(ellipse[0][0]),round(ellipse[0][1])), (round(ellipse[1][0]),round(ellipse[1][1])))
+            ellipsePoints = ((round(ellipse[0][0]), round(ellipse[0][1])), (round(ellipse[1][0]), round(ellipse[1][1])))
             ellipseAngle = ellipse[2]
             print("eCenter: ", ellipsePoints, "angle: ", ellipseAngle)
             add = fishID, circleCenter, radius, ellipsePoints, ellipseAngle
 
-            """add = fishID, area, round(perimeter, 1), convexity, round(aspect_ratio, 3), round(extent, 3), w, h, round(
-                hull_area, 1), round(angle, 1), x1, y1, x2, y2, round(radius, 6), xa, ya, xc, yc, xf[0], yf[
-                0], rect, ellipse, vx[0], vy[0], lefty, righty"""
             properties.append(add)
 
             for pixel in contourPixels:
@@ -62,15 +58,15 @@ def blobProperties(contours):
             averagePointY = round(sum(pixelPositionX) / len(pixelPositionX))
             averagePointX = round(sum(pixelPositionY) / len(pixelPositionY))
 
-            averagePoint.append([averagePointX, averagePointY])
+            averagePoint.append((averagePointX, averagePointY))
 
-            minPositionX = pixelPositionX.index(min(pixelPositionX))
-            maxPositionX = pixelPositionX.index(max(pixelPositionX))
-            minPositionY = pixelPositionY.index(min(pixelPositionY))
-            maxPositionY = pixelPositionY.index(max(pixelPositionY))
+            extremeLeft = tuple(contourPixels[contourPixels[:, :, 0].argmin()][0])
+            extremeRight = tuple(contourPixels[contourPixels[:, :, 0].argmax()][0])
+            extremeTop = tuple(contourPixels[contourPixels[:, :, 1].argmin()][0])
+            extremeBottom = tuple(contourPixels[contourPixels[:, :, 1].argmax()][0])
 
-            positions.append([contourPixels[minPositionX], contourPixels[maxPositionX], contourPixels[minPositionY],
-                              contourPixels[maxPositionY], averagePoint])
+            positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
+            print("Positions: ", positions[fishID - 1])
 
             fishID += 1
     return properties, positions
@@ -80,6 +76,7 @@ def findSize(image):
     """Function to find the area and lenght of a fish(blob)"""
 
     fishLenght = []
+    fishOrientation = []
     # List of RGB colors to differentiate between blobs later
     colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -106,79 +103,76 @@ def findSize(image):
     imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
 
     for i, data in enumerate(blobsData):
-
         fishID = data[0]
         centre = data[1]
-        radius = round(data[2])
+        radius = data[2]
         ellipsePoints = data[3]
         ellipseAngle = round(data[4])
 
-        averagePoint = positions[i][4][0]
-        mininumPointX = positions[i][0][0]
-        maximumPointX = positions[i][1][0]
-        mininumPointY = positions[i][2][0]
-        maximumPointY = positions[i][3][0]
-
-        print("ellipse: ", ellipsePoints[0], ellipsePoints[1], ellipseAngle)
-
-        ellipsePointsCorrected = (round(ellipsePoints[0][0]*math.cos(ellipseAngle*math.pi/180)), round(ellipsePoints[0][1]*math.sin(ellipseAngle*math.pi/180)))
+        averagePoint = positions[i][4]
+        mininumPointX = positions[i][0]
+        maximumPointX = positions[i][1]
+        mininumPointY = positions[i][2]
+        maximumPointY = positions[i][3]
+        pointsMinMaxXY = [mininumPointX, maximumPointX, mininumPointY, maximumPointY]
 
         cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
-        #cv2.line(imagePlot, ellipsePoints[0], ellipsePointsCorrected, (230, 230, 230), 2)
-
-        directionPoint = (round(math.cos(ellipseAngle) * 1000 + averagePoint[0]), -round(math.sin(ellipseAngle) * 1000+ averagePoint[1]))
-
-        print(directionPoint)
-
-        #cv2.line(imagePlot, averagePoint, directionPoint, (255, 255, 255), 2)
-
-
-
-        # Bounding boxes
-        # Rotated rectangle
-        # rect = blobsData[i][21]
-        # box = cv2.boxPoints(rect)
-        # box = np.intp(box)
-
-        # Mimimum enclosing circle
-        # centre = (int(blobsData[i][17]), int(blobsData[i][18]))
-        # radius = int(blobsData[i][14])
-
-        # plotting
-        # rows, cols = image.shape[:2]
-        # cv2.rectangle(imagePlot, (data[10], data[11]), (data[12], data[13]), colours[1], 2)  # Bounding rectangle
-        # cv2.drawContours(imagePlot, [box], 0, colours[4], 2)  # Rotated rectangle
-        #cv2.circle(imagePlot, centre, radius, invertedColors[i], 2)  # Minimum Enclosing Circle
-        cv2.ellipse(imagePlot, (ellipsePoints[0], ellipsePoints[1], ellipseAngle), invertedColors[i], 2)  # Fitted ellipse
-
-
-
         lineColor = singleRGBcolor(255)
-
-        cv2.line(imagePlot, averagePoint, mininumPointX, lineColor, 2)
-        cv2.line(imagePlot, averagePoint, maximumPointX, lineColor, 2)
-        cv2.line(imagePlot, averagePoint, mininumPointY, lineColor, 2)
-        cv2.line(imagePlot, averagePoint, maximumPointY, lineColor, 2)
 
         lenghtCircle = radius * 2
         print("Circle lenght: ", lenghtCircle)
 
+        # Calculate distance from average point to extremepoints
         lenght2MinX = math.sqrt((mininumPointX[0] - averagePoint[0]) ** 2 + (mininumPointX[1] - averagePoint[1]) ** 2)
         lenght2MaxX = math.sqrt((maximumPointX[0] - averagePoint[0]) ** 2 + (maximumPointX[1] - averagePoint[1]) ** 2)
         lenght2MinY = math.sqrt((mininumPointY[0] - averagePoint[0]) ** 2 + (mininumPointY[1] - averagePoint[1]) ** 2)
         lenght2MaxY = math.sqrt((maximumPointY[0] - averagePoint[0]) ** 2 + (maximumPointY[1] - averagePoint[1]) ** 2)
-
         lenghts = [lenght2MinX, lenght2MaxX, lenght2MinY, lenght2MaxY]
-        totalLenght = float(sum(sorted(lenghts)[2:]))
-        convertedLenght = float((totalLenght*0.4)/10)
-        print("Totallenght: ", totalLenght, "Converted lenght: ", convertedLenght)
 
-        cv2.putText(imagePlot, str(convertedLenght)+"CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+        # Calculate and show lenght in GUI
+
+        print("Lenghts: ", lenghts, sorted(lenghts))
+        extremePoint1Index = lenghts.index(sorted(lenghts)[3])
+        extremePoint1 = pointsMinMaxXY[extremePoint1Index]
+        extremePoint2Index = lenghts.index(sorted(lenghts)[2])
+        extremePoint2 = pointsMinMaxXY[extremePoint2Index]
+
+        # Calculate distance between extremePoint1 and extremePoint2
+        lenghtBetweenExtremes = math.sqrt(
+            (extremePoint2[0] - extremePoint1[0]) ** 2 + (extremePoint2[1] - extremePoint1[1]) ** 2)
+
+        if lenghtBetweenExtremes < 200:
+            lenghts[lenghts.index(sorted(lenghts)[2])] = 0
+            extremePoint2Index = lenghts.index(sorted(lenghts)[2])
+            extremePoint2 = pointsMinMaxXY[extremePoint2Index]
+
+        print("Distance between extreme points: ", lenghtBetweenExtremes)
+
+        totalLenght = float(sum(sorted(lenghts)[2:]))
+
+        # Plot lines to extreme points, and mark the lines chosen.
+        cv2.line(imagePlot, averagePoint, mininumPointX, lineColor, 2)
+        cv2.line(imagePlot, averagePoint, maximumPointX, lineColor, 2)
+        cv2.line(imagePlot, averagePoint, mininumPointY, lineColor, 2)
+        cv2.line(imagePlot, averagePoint, maximumPointY, lineColor, 2)
+        cv2.line(imagePlot, averagePoint, extremePoint1, invertedColors[i], 3)
+        cv2.line(imagePlot, averagePoint, extremePoint2, invertedColors[i], 3)
+
+        convertedLenght = float((totalLenght * 0.4) / 10)
+        print("Totallenght: ", totalLenght, radius * 2, "Converted lenght: ", convertedLenght)
+
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
                     (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(convertedLenght)+"CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
                     (255, 255, 255), 2, cv2.LINE_AA)
 
+        """cv2.putText(imagePlot, str(round(convertedLenghtCircle, 1)) + "CM C", (averagePoint[0], averagePoint[1] - 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(convertedLenghtCircle, 1)) + "CM C", (averagePoint[0], averagePoint[1] - 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (255, 255, 255), 2, cv2.LINE_AA)"""
 
         fishText = "Fish" + str(fishID)
         cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 1,
@@ -188,17 +182,35 @@ def findSize(image):
 
         fishLenght.append(totalLenght)
 
+        # Find orientation of fish.
 
-        """print("Center: ", centre)
-        print("Average: ", positions[i][4][0])
-        print("minPosX: ", positions[i][0][0])
-        print("maxPosX: ", positions[i][1][0])
-        print("minPosY: ", positions[i][2][0])
-        print("maxPosY: ", positions[i][3][0])"""
+        angle1 = (math.atan2((extremePoint1[1] - averagePoint[1]),
+                             (extremePoint1[0] - averagePoint[0]))) * 180 / math.pi
+        angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
+                             (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
+        angles = (angle1, angle2)
+        print(angles)
+
+        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    invertedColors[i], 2, cv2.LINE_AA)
+
+        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    invertedColors[i], 2, cv2.LINE_AA)
+
+        fishOrientation.append(angles)
+
+    # print(fishLenght)
+    # showImage(imagePlot)
+    return fishLenght, fishOrientation
 
 
-    print(fishLenght)
-    showImage(imagePlot)
+if __name__ == "__main__":
+    image = cv2.imread(r"DATAdir/RGB/tiff/00016.tiff", cv2.IMREAD_GRAYSCALE)
+    imageThreshold = IsolatingFish.isolateFish(image)
 
-
-findSize(imageBinary)
+    # imageThreshold = cv2.imread(r"DATAdir/RGB/tiff/00016binary.tiff", cv2.IMREAD_UNCHANGED)
+    findSize(imageThreshold)
