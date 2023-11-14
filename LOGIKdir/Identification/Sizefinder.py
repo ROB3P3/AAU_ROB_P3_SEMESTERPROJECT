@@ -73,7 +73,7 @@ def blobProperties(contours):
 
 
 def findSize(image):
-    """Function to find the area and lenght of a fish(blob)"""
+    """Function to find the area and lenght of a fish(blob). image -> binary"""
 
     fishLenght = []
     fishOrientation = []
