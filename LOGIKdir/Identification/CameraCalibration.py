@@ -1,13 +1,13 @@
 import numpy as np
-import cv2 as cv
+import cv2
 import glob
-import math
+import os
 
 
 def removeSides(image):
     """Function to remove the sides of the PNG images"""
     # manually found the x-coordinates for the sides on the top and bottom
-    xLeftTop = 666
+    xLeftTop = 656
     xLeftBot = 677
     xRightTop = 1824
     xRightBot = 1870
@@ -22,83 +22,120 @@ def removeSides(image):
     return image
 
 
-def showImage(image):
-    """Function to show an image until 0 is pressed"""
-    cv.imshow("Image", image)
+def showImage(images):
+    """Function to show an array of images until 0 is pressed"""
+    for i, image in enumerate(images): cv2.imshow("Image"+str(i+1), image)
     while True:
-        k = cv.waitKey(0) & 0xFF
+        k = cv2.waitKey(0) & 0xFF
         if k == 48:
             break
         print(k)
 
 
-def calibrateImage(imageType):
+def getImageCalibration(group):
+    """Gets the values required for undistorting and image based on a checkerboard."""
     # termination criteria
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    objp = np.zeros((6 * 9, 3), np.float32)
-    objp[:, :2] = np.mgrid[0:9, 0:6].T.reshape(-1, 2)
-    # Arrays to store object points and image points from all the images.
-    objpoints = []  # 3d point in real world space
-    imgpoints = []  # 2d points in image plane.
-    imgError = []
-    imageCorrection = []
-    images = glob.glob(r'DATAdir/RGB/Calibration/{}/*.png'.format(imageType))
-    for fname in images:
-        print(fname)
-        image = cv.imread(fname)
-        if imageType == "PNG": img = removeSides(image)
-        # showImage(img)
-        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    # Define the dimensions of checkerboard
+    CHECKERBOARD = (6, 9)
+
+    # stop the iteration when specified
+    # accuracy, epsilon, is reached or
+    # specified number of iterations are completed.
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+    # Vector for 3D points in real world space
+    points3D = []
+
+    # Vector for 2D points in image plane.
+    points2D = []
+
+    # Prepares 3D points real world coordinates like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0).
+    objectPoints3D = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+    objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+
+    # Extracting path of individual images stored in a given directory.
+    images = glob.glob(r'DATAdir\RGB\Group{}\CalibrationPNG\*.png'.format(group))
+
+    for fileName in images:
+        print(fileName)
+        image = cv2.imread(fileName, cv2.IMREAD_UNCHANGED)
+        #showImage([image])
+        image = removeSides(image)
+        grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
         # Find the chess board corners
-        ret, corners = cv.findChessboardCorners(gray, (9, 6), None)
-        # If found, add object points, image points (after refining them)
-        if ret == True:
-            print("Ret = True")
-            objpoints.append(objp)
-            corners2 = cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            imgpoints.append(corners2)
+        # If desired number of corners are
+        # found in the image then retval = true
+        retval, corners = cv2.findChessboardCorners(grayColor, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH
+                                                    + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
+
+        # If desired number of corners can be detected then,
+        # refine the pixel coordinates and display
+        # them on the images of checkerboard
+        if retval == True:
+            points3D.append(objectPoints3D)
+
+            # Refining pixel coordinates for given 2d points.
+            corners2 = cv2.cornerSubPix(grayColor, corners, (11, 11), (-1, -1), criteria)
+
+            points2D.append(corners2)
+
             # Draw and display the corners
-            cv.drawChessboardCorners(image, (9, 6), corners2, ret)
+            imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
+            #showImage([imageDrawn])
+        else:
+            print("Can't find anything: ", fileName)
 
-            # Begin undistorting
-            ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+    # Perform camera calibration by passing the value of above found out 3D points (points3D)
+    # and its corresponding pixel coordinates of the detected corners (points2D)
+    print("Calculating camera calibration values...")
+    retval, matrix, distortion, rotationVector, translationVector = cv2.calibrateCamera(points3D, points2D,
+                                                                                        grayColor.shape[::-1], None,
+                                                                                        None)
 
-            h, w = image.shape[:2]
-            newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+    # Displaying required output
+    print(" Camera matrix:")
+    print(matrix)
 
-            # undistort
-            dst = cv.undistort(image, mtx, dist, None, newcameramtx)
-            imageCorrection.append(dst)
+    print("\n Distortion coefficient:")
+    print(distortion)
 
-            mean_error = 0
-            for i in range(len(objpoints)):
-                imgpoints2, _ = cv.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-                error = cv.norm(imgpoints[i], imgpoints2, cv.NORM_L2) / len(imgpoints2)
-                mean_error += error
-                totalError = mean_error / len(objpoints)
-            print("total error: {}".format(totalError))
-            imgError.append(totalError)
+    print("\n Rotation Vectors:")
+    print(rotationVector)
 
-    leastError = imgError.index(min(imgError))
-    worstError = imgError.index(max(imgError))
-    medianError = sorted(imgError)[round(len(imgError)/2)]
+    print("\n Translation Vectors:")
+    print(translationVector)
 
-    print("Least error: ", images[leastError])
-    print("Worst error: ", images[worstError])
-    print("Median error: ", images[imgError.index(medianError)])
+    # Get new camera matrix
+    height, width = image.shape[:2]
+    print("h+w: ", height, width)
+    newCameraMatrix, regionsOfInterest = cv2.getOptimalNewCameraMatrix(matrix, distortion, (width, height), 1,
+                                                                       (width, height))
 
-    cv.imshow("Minimum Error", imageCorrection[leastError])
-    cv.imshow("Maximum Error", imageCorrection[worstError])
-    cv.imshow("Median Error", imageCorrection[imgError.index(medianError)])
-    while True:
-        k = cv.waitKey(0) & 0xFF
-        if k == 48:
-            break
-        print(k)
+    return [retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest]
 
-    cv.destroyAllWindows()
+
+def calibrateImage(correctionValues, group):
+    images = glob.glob(r'DATAdir\RGB\Group{}\CalibrationPNG\*.png'.format(group))
+    retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
+
+    for fileName in images:
+        print("writing calibrated image for:", fileName.rsplit('\\', 1)[-1])
+        image = cv2.imread(fileName)
+        image = removeSides(image)
+        imageUndistorted = cv2.undistort(image, matrix, distortion, None, newCameraMatrix)
+
+        # Crop image to region of interest
+        x, y, width, height = regionsOfInterest
+        imageUndistorted = imageUndistorted[y:y + height, x:x + width]
+
+        #showImage([imageUndistorted])
+        newFileName = r"DATAdir/RGB/Group{}/CalibratedPNG/".format(group) + "calibrated" + fileName.rsplit('\\', 1)[-1]
+        print(newFileName)
+        cv2.imwrite(newFileName, imageUndistorted)
 
 
 if __name__ == "__main__":
-    calibrateImage("png")
+    group = 9
+    calibration = getImageCalibration(group)
+    calibrateImage(calibration, group)
