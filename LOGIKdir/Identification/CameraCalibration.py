@@ -124,8 +124,7 @@ def getImageCalibration(path):
 def calibrateImage(correctionValues, mainPath, outputPath):
     """Apllies the calibration values found in getImageCalibration() to the images in the group"""
     # Clear output folder to ensure only the newest files.
-    #fishPath = mainPath + "fish/rgb/*.png"
-    fishPath = mainPath + "calibration/*.png"
+    fishPath = mainPath + "fish/rgb/*.png"
     outputPath = outputPath + "{}"
     clearDirectory(outputPath.format("*"))
 
@@ -149,8 +148,7 @@ def calibrateImage(correctionValues, mainPath, outputPath):
         imageUndistorted = imageUndistorted[y:y + height, x:x + width]
 
         # showImage([imageUndistorted])
-        #newFileName = outputPath.format("calibrated" + fileName.rsplit('\\', 1)[-1])
-        newFileName = outputPath.format("calibrated" + str(i).zfill(5) + ".png")
+        newFileName = outputPath.format("calibrated" + fileName.rsplit('\\', 1)[-1])
         i += 1
 
         cv2.imwrite(newFileName, imageUndistorted)
@@ -160,15 +158,9 @@ def calibrateImage(correctionValues, mainPath, outputPath):
 if __name__ == "__main__":
     groups = [4, 9, 15, 19]
 
-    print("Running calibration for all groups")
-    mainPath = "C:/FishProject/Data/**/"
-    outputPath = "C:/FishProject/Output/collective_groups/WarpedCalibratedFish/"
-    calibration = getImageCalibration(mainPath)
-    calibrateImage(calibration, mainPath, outputPath)
-
-    """for group in groups:
+    for group in groups:
         print("Running calibration for group {}".format(group))
         mainPath = "C:/FishProject/Data/group_{}/"
         outputPath = "C:/FishProject/Output/group_{}/WarpedCalibratedFish/"
         calibration = getImageCalibration(mainPath.format(group))
-        calibrateImage(calibration, mainPath.format(group), outputPath.format(group))"""
+        calibrateImage(calibration, mainPath.format(group), outputPath.format(group))
