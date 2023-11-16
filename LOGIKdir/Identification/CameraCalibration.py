@@ -4,27 +4,18 @@ import glob
 import os
 
 
-def removeSides(image):
-    """Function to remove the sides of the PNG images"""
-    # manually found the x-coordinates for the sides on the top and bottom
-    xLeftTop = 656
-    xLeftBot = 677
-    xRightTop = 1824
-    xRightBot = 1870
-
-    """for y, row in enumerate(image):
-        for x, col in enumerate(row):
-            # since the image is crooked, the sides are removed by scaling the difference in the x-coordinates with the y-coordinate
-            if x <= (xLeftTop + math.floor((((xLeftBot - xLeftTop) / 1080) * y))) or x >= (
-                    xRightTop + math.floor((((xRightBot - xRightTop) / 1080) * y))):
-                image[y][x] = 0"""
-    image = image[0:1080, xLeftTop:xRightBot]
-    return image
+def clearDirectory(path):
+    """Delete all files in the given folder"""
+    print("Deleting files in: ", path)
+    files = glob.glob(path)
+    for file in files:
+        #print("Deleted ", file)
+        os.remove(file)
 
 
 def showImage(images):
     """Function to show an array of images until 0 is pressed"""
-    for i, image in enumerate(images): cv2.imshow("Image"+str(i+1), image)
+    for i, image in enumerate(images): cv2.imshow("Image" + str(i + 1), image)
     while True:
         k = cv2.waitKey(0) & 0xFF
         if k == 48:
@@ -32,15 +23,29 @@ def showImage(images):
         print(k)
 
 
-def getImageCalibration(group):
+def WarpPerspective(image, fileName):
+    """Warp the perspective of a 1920x1080 PNG in group 9 image to help account for the angle of the camera.
+    Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
+
+    # Points in the orignal image indicating where to warp perspective to.
+    orignalPoints = np.float32([[666, 0], [677, 1080], [1824, 0], [1864, 1080]])
+    # What the originalPoints new values should be in the perspective warped image
+    newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
+    # Warp all checkerboard images and put them in their own folder.
+    #print("Warping perspective of {}.".format(fileName))
+    warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
+    # Use the values from above to warp the image to a 1080x1080 pixel image.
+    return cv2.warpPerspective(image, warpMatrix, (1080, 1080))
+
+
+def getImageCalibration(path):
     """Gets the values required for undistorting and image based on a checkerboard."""
     # termination criteria
     # Define the dimensions of checkerboard
-    CHECKERBOARD = (6, 9)
+    CHECKERBOARD = (9, 6)
 
-    # stop the iteration when specified
-    # accuracy, epsilon, is reached or
-    # specified number of iterations are completed.
+    # The criteria for when to stop iterating, determined either by reaching a certain accuracy (like 0.001) or
+    # when a certain number of iterations have been performed (like 30)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
     # Vector for 3D points in real world space
@@ -54,24 +59,25 @@ def getImageCalibration(group):
     objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
     # Extracting path of individual images stored in a given directory.
-    images = glob.glob(r'DATAdir\RGB\Group{}\CalibrationPNG\*.png'.format(group))
+    images = glob.glob(path + "/calibration/*.png")
 
     for fileName in images:
-        print(fileName)
+        name = fileName.rsplit('\\', 1)[-1]
         image = cv2.imread(fileName, cv2.IMREAD_UNCHANGED)
-        #showImage([image])
-        image = removeSides(image)
+
+        # Warp perspective of board
+        image = WarpPerspective(image, name)
+
+        print("Finding Checkerboards for {}.".format(name))
+        # Convert to greyscale
         grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # Find the chess board corners
-        # If desired number of corners are
-        # found in the image then retval = true
+        # If desired number of corners are found in the image then retval = true
         retval, corners = cv2.findChessboardCorners(grayColor, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH
                                                     + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
 
-        # If desired number of corners can be detected then,
-        # refine the pixel coordinates and display
-        # them on the images of checkerboard
+        # If desired number of corners are detected, refine the pixel coordinates and display them .
         if retval == True:
             points3D.append(objectPoints3D)
 
@@ -84,7 +90,8 @@ def getImageCalibration(group):
             imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
             #showImage([imageDrawn])
         else:
-            print("Can't find anything: ", fileName)
+            print("Can't find enough corners in {}.".format(name))
+            # showImage([image])
 
     # Perform camera calibration by passing the value of above found out 3D points (points3D)
     # and its corresponding pixel coordinates of the detected corners (points2D)
@@ -108,34 +115,60 @@ def getImageCalibration(group):
 
     # Get new camera matrix
     height, width = image.shape[:2]
-    print("h+w: ", height, width)
     newCameraMatrix, regionsOfInterest = cv2.getOptimalNewCameraMatrix(matrix, distortion, (width, height), 1,
                                                                        (width, height))
 
     return [retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest]
 
 
-def calibrateImage(correctionValues, group):
-    images = glob.glob(r'DATAdir\RGB\Group{}\CalibrationPNG\*.png'.format(group))
-    retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
+def calibrateImage(correctionValues, mainPath, outputPath):
+    """Apllies the calibration values found in getImageCalibration() to the images in the group"""
+    # Clear output folder to ensure only the newest files.
+    #fishPath = mainPath + "fish/rgb/*.png"
+    fishPath = mainPath + "calibration/*.png"
+    outputPath = outputPath + "{}"
+    clearDirectory(outputPath.format("*"))
 
+    # Get all images to calibrate
+    images = glob.glob(fishPath)
+    retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
+    i = 1
     for fileName in images:
-        print("writing calibrated image for:", fileName.rsplit('\\', 1)[-1])
+        name = fileName.rsplit('\\', 1)[-1]
         image = cv2.imread(fileName)
-        image = removeSides(image)
+
+        # Warp perspective on the fish images.
+        image = WarpPerspective(image, name)
+
+        # Calibrate the warped image of fish.
+        print("Calibrating {} image {}.".format(fishPath.rsplit("/", 1)[-2], name))
         imageUndistorted = cv2.undistort(image, matrix, distortion, None, newCameraMatrix)
 
         # Crop image to region of interest
         x, y, width, height = regionsOfInterest
         imageUndistorted = imageUndistorted[y:y + height, x:x + width]
 
-        #showImage([imageUndistorted])
-        newFileName = r"DATAdir/RGB/Group{}/CalibratedPNG/".format(group) + "calibrated" + fileName.rsplit('\\', 1)[-1]
-        print(newFileName)
+        # showImage([imageUndistorted])
+        #newFileName = outputPath.format("calibrated" + fileName.rsplit('\\', 1)[-1])
+        newFileName = outputPath.format("calibrated" + str(i).zfill(5) + ".png")
+        i += 1
+
         cv2.imwrite(newFileName, imageUndistorted)
+    #print("Finished warping and calibrating all fish images in group {}.".format(group))
 
 
 if __name__ == "__main__":
-    group = 9
-    calibration = getImageCalibration(group)
-    calibrateImage(calibration, group)
+    groups = [4, 9, 15, 19]
+
+    print("Running calibration for all groups")
+    mainPath = "C:/FishProject/Data/**/"
+    outputPath = "C:/FishProject/Output/collective_groups/WarpedCalibratedFish/"
+    calibration = getImageCalibration(mainPath)
+    calibrateImage(calibration, mainPath, outputPath)
+
+    """for group in groups:
+        print("Running calibration for group {}".format(group))
+        mainPath = "C:/FishProject/Data/group_{}/"
+        outputPath = "C:/FishProject/Output/group_{}/WarpedCalibratedFish/"
+        calibration = getImageCalibration(mainPath.format(group))
+        calibrateImage(calibration, mainPath.format(group), outputPath.format(group))"""

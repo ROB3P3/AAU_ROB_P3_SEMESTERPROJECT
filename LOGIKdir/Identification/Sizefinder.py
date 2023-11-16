@@ -1,17 +1,18 @@
+import glob
 import cv2
 import numpy as np
 import math
 import IsolatingFish
 
 
-def showImage(image):
-    """Function to show an image until 0 is pressed"""
-    cv2.imshow("Image", image)
+def showImage(images):
+    """Function to show an array of images until 0 is pressed"""
+    for i, image in enumerate(images): cv2.imshow("Image" + str(i + 1), image)
     while True:
         k = cv2.waitKey(0) & 0xFF
         if k == 48:
             break
-        print(k)
+        #print(k)
 
 
 def singleRGBcolor(color):
@@ -36,7 +37,7 @@ def blobProperties(contours):
 
         # Determines the area of the blob in order to avoid processing those too small to be fish
         area = cv2.contourArea(contourPixels)
-        if area > 20000:
+        if area > 5000:
             # Finds the center and radius of the minimum enclosing circle
             (xc, yc), radius = cv2.minEnclosingCircle(contourPixels)
             # Pixel points have to be round numbers
@@ -172,10 +173,10 @@ def findSize(image):
 
         print("Totallenght: ", totalLenght, radius * 2, "Converted lenght: ", convertedLenght)
 
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)) + "CM", averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (255, 255, 255), 1, cv2.LINE_AA)
 
         # possible use though unsure
         # Using circles for lenght estimation
@@ -188,10 +189,10 @@ def findSize(image):
 
         # Label blobs
         fishText = "Fish" + str(fishID)
-        cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    invertedColors[i], 2, cv2.LINE_AA)
+        cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    invertedColors[i], 1, cv2.LINE_AA)
 
         fishLenght.append(totalLenght)
 
@@ -204,26 +205,28 @@ def findSize(image):
         print(angles)
 
         # put angles on the lines to show.
-        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    invertedColors[i], 2, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    invertedColors[i], 1, cv2.LINE_AA)
 
-        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 0, 0), 8, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    invertedColors[i], 2, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    invertedColors[i], 1, cv2.LINE_AA)
 
         fishOrientation.append(angles)
 
     # print(fishLenght)
-    showImage(imagePlot)
-    return fishLenght, fishOrientation
+
+    return fishLenght, fishOrientation, imagePlot
 
 
 if __name__ == "__main__":
-    image = cv2.imread(r"DATAdir/RGB/tiff/00016.tiff", cv2.IMREAD_GRAYSCALE)
-    imageThreshold = IsolatingFish.isolateFish(image)
-
-    # imageThreshold = cv2.imread(r"DATAdir/RGB/tiff/00016binary.tiff", cv2.IMREAD_UNCHANGED)
-    findSize(imageThreshold)
+    images = glob.glob(r"DATAdir/RGB/Group9/WarpedCalibratedFish/*.png")
+    for i, fileName in enumerate(images):
+        if i > 0:
+            image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+            imageThreshold = IsolatingFish.isolateFish(image)
+            fishLenghts, fishOrientations, annotatedImage = findSize(imageThreshold)
+            showImage([annotatedImage, image])
