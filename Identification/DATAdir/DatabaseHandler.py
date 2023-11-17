@@ -3,8 +3,8 @@ import random
 
 class Database:
     # Starter en forbindelse til mysql databasen og opretter dictionary der er bruges til tabellen senere.
-    def __init__(self):
-        self.mysql = mysql.connector.connect(host="172.26.51.10", user="Villiam", password="Villiam", database="test")
+    def __init__(self, IPAddress):
+        self.mysql = mysql.connector.connect(host=IPAddress, user="Villiam", password="Villiam", database="test")
         self.curs = self.mysql.cursor(buffered=True)
         self.dict = {
             "Ycor": 0,
@@ -97,47 +97,49 @@ class Database:
         self.mysql.connect()
 
 
-def test():
-    makeid = random.randint(0, 999)
-    gameidp1 = "P1ID{}".format(makeid)
-    gameidp2 = "P2ID{}".format(makeid)
-    db = Database()
-    db.start(gameidp1)
-    db.start(gameidp2)
-    print(gameidp1)
 
 
-def testdelete(gamid):
-    db = Database()
-    db.delete(gamid)
-
-
-while True:
-    print("Hvad vil du?\n"
-          "1: Tilføj\n"
-          "2: Ændrer\n"
-          "3: Slet\n"
-          "4: Se alle")
-    valg = int(input())
-    if valg == 1:
-        test()
-    elif valg == 2:
-        print("Id:")
-        gamid = str(input())
-        print("Ycor:")
-        Ycor = str(input())
-        print("Xcor:")
-        column = str(input())
-        print("newval:")
-        newval = str(input())
+if __name__ == "__main__":
+    def test():
+        makeid = random.randint(0, 999)
+        gameidp1 = "P1ID{}".format(makeid)
+        gameidp2 = "P2ID{}".format(makeid)
         db = Database()
-        db.modify(gamid, Ycor, newval, column)
-    elif valg == 3:
-        print("Gamid:")
-        gamid = str(input())
-        testdelete(gamid)
-    elif valg == 4:
+        db.start(gameidp1)
+        db.start(gameidp2)
+        print(gameidp1)
+
+
+    def testdelete(gamid):
         db = Database()
-        print(db.pullall())
-    else:
-        print("vælg mellem 1 og 4")
+        db.delete(gamid)
+
+    while True:
+        print("Hvad vil du?\n"
+              "1: Tilføj\n"
+              "2: Ændrer\n"
+              "3: Slet\n"
+              "4: Se alle")
+        valg = int(input())
+        if valg == 1:
+            test()
+        elif valg == 2:
+            print("Id:")
+            gamid = str(input())
+            print("Ycor:")
+            Ycor = str(input())
+            print("Xcor:")
+            column = str(input())
+            print("newval:")
+            newval = str(input())
+            db = Database()
+            db.modify(gamid, Ycor, newval, column)
+        elif valg == 3:
+            print("Gamid:")
+            gamid = str(input())
+            testdelete(gamid)
+        elif valg == 4:
+            db = Database()
+            print(db.pullall())
+        else:
+            print("vælg mellem 1 og 4")
