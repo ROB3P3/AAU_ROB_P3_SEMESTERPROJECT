@@ -1,7 +1,8 @@
 import tkinter
 from tkinter import *
-import Identification.LOGIKdir as Logik
-import Identification.DATAdir as Data
+from mysql.connector.errors import Error, Warning
+from mysql.connector import errorcode
+import Identification.DATAdir.DatabaseHandler as DatabaseHandler
 
 class Main(Tk):
     def __init__(self):
@@ -61,17 +62,51 @@ class StartPage(Frame):
         self.connectButton = Button(self, text="Connect", command=lambda: self.checkConnection(), font=("Arial", "20"),
                                     bg="black", fg="white").place(relx=0.75, rely=0.2, anchor=CENTER)
 
+
+        # Path addres and check
+        self.pathField = Entry(self, font=("Arial", "25"), width=20, bg="white", fg="black")
+        self.pathField.place(relx=0.48, rely=0.40, anchor=CENTER)
+        self.pathField.insert(tkinter.END, r"C:\users\FishProject")
+        self.pathButton = Button(self, text="Check", command=lambda: self.checkPath(), font=("Arial", "20"),
+                                    bg="black", fg="white").place(relx=0.75, rely=0.4, anchor=CENTER)
+
         # Labels to indicate function of widget
-        self.IPlabel = Label(self, font=("Arial", "25"), text="IP:", bg="royalblue2",
-                             fg="black").place(relx=0.15, rely=0.20, anchor=CENTER)
-        self.portlabel = Label(self, font=("Arial", "25"), text="Port:", bg="royalblue2",
-                               fg="black").place(relx=0.46, rely=0.20, anchor=CENTER)
+        self.IPlabel = Label(self, font=("Arial", "25"), text="IP:", bg="royalblue2", fg="black")
+        self.IPlabel.place(relx=0.15, rely=0.20, anchor=CENTER)
+        self.portlabel = Label(self, font=("Arial", "25"), text="Port:", bg="royalblue2", fg="black")
+        self.portlabel.place(relx=0.46, rely=0.20, anchor=CENTER)
+        self.pathlabel = Label(self, font=("Arial", "25"), text="Path to root:", bg="royalblue2",fg="black")
+        self.pathlabel.place(relx=0.20, rely=0.4, anchor=CENTER)
 
     def checkConnection(self):
+        """Check if provided IP and port can connect to a mySQL server"""
         IPAdress = str(self.IPField.get())
         IPAdressList = IPAdress.rsplit(".", -1)
         port = str(self.portField.get())
-        print("IP: {} Port: {}".format(IPAdress, port))
+        print("IP: {}, Port: {}".format(IPAdress, port))
+
+        """Database = DatabaseHandler.Database(IPAdress, port)
+        isConnected = Database.connect()
+        print("Connection is: ", isConnected)
+        print(Database.pullall())
+        try:
+            Database = DatabaseHandler.Database(IPAdress, port)
+            isConnected = Database.connect()
+            print("Connection is: ", isConnected)
+            print(Database.pullall())
+        except (Error, Warning) as e:
+            print(e[0])
+            print(e[1])
+            return None
+        except Error as error:
+            print("Error code:", error.errno)  # error number
+            print("Error message:", error.msg)  # error message
+            print("List of error codes:")
+            print(errorcode.CR_CONNECTION_ERROR)
+            print(errorcode.CR_CONN_HOST_ERROR)"""
+
+        # Check if IP and port fulfill the basic requirements to be valid.
+        # Maybe move to Logik?
         if len(IPAdressList) == 4:
             valueValidation = all(int(number) <= 255 for number in IPAdressList)
             lenghtValidation = all(len(number) <= 3 for number in IPAdressList)
@@ -79,20 +114,28 @@ class StartPage(Frame):
                 print("Valid IP")
                 if len(port) == 4 and port.isdigit() is True:
                     print("Valid Port, attempting connection.")
-                    Data.DatabaseHandler.Database(IPAdress)
+                    try:
+                        self.Database = DatabaseHandler.Database(IPAdress, port)
+                        isConnected = self.Database.connect()
+                        print("Connection is: ", isConnected)
+                        print(self.Database.pullall())
+                    except Error as error:
+                        print(error.msg)
                 else:
                     print("Invalid port: ", port)
             elif valueValidation is False and lenghtValidation is True:
-                print("Invalid IP: a number is too big")
+                print("Invalid IP: a link is bigger than 255")
             elif valueValidation is True and lenghtValidation is False:
-                print("Invalid IP: a number is too long")
+                print("Invalid IP: a link is longer than 3 digits")
             else:
-                print("Invalid IP: a number is too big and long")
+                print("Invalid IP: a link is too big and long")
         else:
             print("Invalid IP: not enough separations \n", IPAdress.rsplit(".", -1))
 
     def checkPath(self):
-        pass
+        """Check if root path is valid, and that it contains all necessary folders."""
+        isConnected = self.Database.connect()
+        print("Connection is:", isConnected)
 
 
 class PageOne(Frame):
@@ -102,8 +145,10 @@ class PageOne(Frame):
         Frame.__init__(self, parent)
         self.controller = controller
         self.config(bg="royalblue2")
+
+
         self.BackButton = Button(self, text="Back", command=lambda: self.controller.show_frame("StartPage"),
-                                 font=("Arial", "25"), bg="black", fg="white").place(relx=0.5, rely=0.45, anchor=CENTER)
+                                 font=("Arial", "25"), bg="black", fg="white").place(relx=0.9, rely=0.9, anchor=CENTER)
 
 
 app = Main()

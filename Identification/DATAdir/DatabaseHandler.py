@@ -1,10 +1,15 @@
 import mysql.connector
+from mysql.connector import Error
 import random
 
-class Database:
+
+class Database():
     # Starter en forbindelse til mysql databasen og opretter dictionary der er bruges til tabellen senere.
-    def __init__(self, IPAddress):
-        self.mysql = mysql.connector.connect(host=IPAddress, user="Villiam", password="Villiam", database="test")
+    def __init__(self, IPAddress, port):
+        self.IPAddress = IPAddress
+        self.port = port
+        self.mysql = mysql.connector.connect(host=self.IPAddress, port=self.port, user="Villiam", password="Villiam",
+                                             database="test")
         self.curs = self.mysql.cursor(buffered=True)
         self.dict = {
             "Ycor": 0,
@@ -20,6 +25,17 @@ class Database:
             "J": 10,
             "turn": 11,
         }
+
+
+    # Reopen the connection to the database
+    def connect(self):
+        self.mysql.connect()
+        return self.mysql.is_connected()
+
+    # CLose the connection to the database
+    def close(self):
+        self.mysql.close()
+
     # Udfør en database interaktion og "commit"er den.
     def _do(self, cmd: str, val: tuple = None):
         if val is None:
@@ -88,15 +104,8 @@ class Database:
         print("Modify:", modify.format(id=gameid, change=whatchange, replace=replace, search=search))
         self._do(modify.format(id=gameid, change=whatchange, replace=replace, search=search))
 
-    # Lukker forbindelsen til databasen
-    def close(self):
-        self.mysql.close()
-
-    # Genåbner forbindelsen til databasen
-    def connect(self):
-        self.mysql.connect()
-
-
+    def __exit__(self):
+        print("Exiting mySQL")
 
 
 if __name__ == "__main__":
@@ -113,6 +122,7 @@ if __name__ == "__main__":
     def testdelete(gamid):
         db = Database()
         db.delete(gamid)
+
 
     while True:
         print("Hvad vil du?\n"
