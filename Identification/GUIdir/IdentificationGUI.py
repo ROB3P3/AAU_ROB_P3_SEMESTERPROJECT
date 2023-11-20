@@ -2,6 +2,8 @@ import glob
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
+from tkinter.ttk import Progressbar
+from tkinter.ttk import Label as ttkLabel
 from mysql.connector.errors import Error, Warning
 from mysql.connector import errorcode
 import Identification.DATAdir.DatabaseHandler as DatabaseHandler
@@ -310,10 +312,10 @@ class StartPage(Frame):
             return False
 
     def start(self):
-        """Start identification process"""
+        """Goes to group selection page if path and connection are valid."""
         print("Entry modified? ", self.modifiedEntry)
         if self.pathReady and self.connectionReady and not self.modifiedEntry:
-            print("Starting identification")
+            print("Group selection")
             self.controller.frames["PageOne"].insertGroups(self.groupFolders)
             self.controller.show_frame("PageOne")
         else:
@@ -334,15 +336,15 @@ class PageOne(Frame):
 
         self.groupList = Listbox(self, selectmode="multiple", height=10, width=30, font=("Arial", "25"), bg="white",
                                  fg="black", justify='center')
-        self.groupList.place(relx=0.5, rely=0.5, anchor=CENTER)
+        self.groupList.place(relx=0.5, rely=0.3, anchor=CENTER)
 
         # Two buttons underneath groupList to select and deselect all items.
         self.selectAllButton = Button(self, text="Select all", command=lambda: self.groupList.select_set(0, END),
                                       font=("Arial", "25"), bg="black", fg="white")
-        self.selectAllButton.place(relx=0.3, rely=0.9, anchor=CENTER)
+        self.selectAllButton.place(relx=0.4, rely=0.7, anchor=CENTER)
         self.deselectAllButton = Button(self, text="Deselect all", command=lambda: self.groupList.select_clear(0, END),
                                         font=("Arial", "25"), bg="black", fg="white")
-        self.deselectAllButton.place(relx=0.7, rely=0.9, anchor=CENTER)
+        self.deselectAllButton.place(relx=0.6, rely=0.7, anchor=CENTER)
 
         # Button to start identification process
         self.startButton = Button(self, text="Start", command=lambda: self.start(),
@@ -352,12 +354,13 @@ class PageOne(Frame):
     def insertGroups(self, groupFolders):
         for group in groupFolders:
             self.groupList.insert(END, str(group))
-            #self.groupList.itemconfig(str(group), bg="lime")
+            # self.groupList.itemconfig(str(group), bg="lime")
 
     def start(self):
         """Start identification process"""
         print("Starting identification")
         self.controller.show_frame("PageTwo")
+
 
 class PageTwo(Frame):
     """Frame to show the identification progress"""
@@ -367,9 +370,57 @@ class PageTwo(Frame):
         self.controller = controller
         self.config(bg="royalblue2")
 
-        self.BackButton = Button(self, text="Back", command=lambda: self.controller.show_frame("StartPage"),
+        self.backButton = Button(self, text="Back", command=lambda: self.controller.show_frame("PageOne"),
                                  font=("Arial", "25"), bg="black", fg="white")
-        self.BackButton.place(relx=0.9, rely=0.9, anchor=CENTER)
+        self.backButton.place(relx=0.9, rely=0.9, anchor=CENTER)
+
+        self.startButton = Button(self, text="Start", command=lambda: self.showProgress(),
+                                  font=("Arial", "25"), bg="black", fg="white")
+        self.startButton.place(relx=0.5, rely=0.9, anchor=CENTER)
+
+        # Progressbar to show progress of identification
+        self.progressBarAllGroups = Progressbar(self, orient=HORIZONTAL, length=500, mode='determinate')
+        self.progressBarAllGroups.place(relx=0.5, rely=0.5, anchor=CENTER)
+
+        self.progressBarSeperateGroups = Progressbar(self, orient=HORIZONTAL, length=500, mode='determinate')
+        self.progressBarSeperateGroups.place(relx=0.5, rely=0.7, anchor=CENTER)
+
+        # Labels to indicate what the progressbars is showing
+        self.progressBarAllGroupsLabel = ttkLabel(self, font=("Arial", "25"), text="Progress of all groups")
+        self.progressBarAllGroupsLabel.place(relx=0.5, rely=0.4, anchor=CENTER)
+        self.progressBarSeperateGroupsLabel = ttkLabel(self, font=("Arial", "25"), text="Progress of individual group")
+        self.progressBarSeperateGroupsLabel.place(relx=0.5, rely=0.6, anchor=CENTER)
+
+    def update_progress_label(self, progressBar):
+        return f"Current Progress: {progressBar['value']}%"
+
+    def showProgress(self):
+        self.groupSelection = self.controller.frames["PageOne"].groupList.curselection()
+        self.groupFolders = [self.controller.frames["PageOne"].groupList.get(group) for group in self.groupSelection]
+        print(self.groupFolders)
+        # disable all buttons until identification is done
+        self.startButton.config(state=DISABLED)
+        self.backButton.config(state=DISABLED)
+
+        import time
+        self.progressBarAllGroups['value'] = 0
+        for group in self.groupFolders:
+            print(group)
+            self.progressBarAllGroupsLabel.config(text="Progress of {}".format(group))
+            # self.progressBarAllGroupsLabel['text'] = self.update_progress_label(self.progressBarAllGroups)
+            self.progressBarAllGroups['value'] += 100 / len(self.groupFolders)
+            self.progressBarSeperateGroups['value'] = 0
+            for i in range(5):
+                print(i)
+                self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1))
+                self.progressBarSeperateGroups['value'] += 20
+                self.update_idletasks()
+            self.update_idletasks()
+        self.progressBarAllGroupsLabel.config(text="Done")
+
+        # enable all buttons when identification is done
+        self.startButton.config(state=NORMAL)
+        self.backButton.config(state=NORMAL)
 
 
 app = Main()
