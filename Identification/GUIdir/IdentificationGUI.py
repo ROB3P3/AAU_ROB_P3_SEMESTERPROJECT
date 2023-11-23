@@ -60,6 +60,7 @@ class StartPage(Frame):
         self.groupAmount = len(self.groupFolders)
         self.pathReady = False
         self.connectionReady = False
+        self.tableName = "table_1"
 
         # check if entry fields have been modified since last check
         # to prevents user from validating one oath and then changing the path without validating again.
@@ -95,7 +96,8 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        self.IPField.insert(tk.END, "172.26.51.10")
+        #self.IPField.insert(tk.END, "172.26.51.10")
+        self.IPField.insert(tk.END, "192.168.50.101")
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
         self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
@@ -195,12 +197,12 @@ class StartPage(Frame):
 
         # attempt to connect to mySQL database
         try:
-            Database = DatabaseHandler.Database(IPAdress, port)
-            isConnected = Database.connect()
+            self.Database = DatabaseHandler.Database(IPAdress, port)
+            isConnected = self.Database.connect()
             self.connectionLabel.config(text="Connected")
             self.connectionReady = True
             print("Connection is: ", isConnected)
-            print(Database.pullall())
+            print(self.Database.pullall())
         except Error as error:
             self.connectionLabel.config(text="Not connected")
             self.connectionReady = False
@@ -315,6 +317,21 @@ class StartPage(Frame):
         """Goes to group selection page if path and connection are valid."""
         print("Entry modified? ", self.modifiedEntry)
         if self.pathReady and self.connectionReady and not self.modifiedEntry:
+            # Check for tables named table_x in the mySQL database, and modify tableName to be one higher than the
+            # highest table number. UNCOMMENT BELOW LATER
+            """while True:
+                if (self.tableName,) in self.Database.pullall():
+                    self.tableName = self.tableName[:-1] + str(int(self.tableName[-1]) + 1)
+                    print("Table name already exists, changing to {}".format(self.tableName))
+                else:
+                    print("Table name is {}".format(self.tableName))
+                    break"""
+
+            # Create table in mySQL database
+            print("Creating table")
+            self.Database.createTable(self.tableName)
+            print(self.Database.pullall())
+
             print("Group selection")
             self.controller.frames["PageOne"].insertGroups(self.groupFolders)
             self.controller.show_frame("PageOne")
@@ -395,6 +412,8 @@ class PageTwo(Frame):
         return f"Current Progress: {progressBar['value']}%"
 
     def showProgress(self):
+        self.tableName = self.controller.frames["StartPage"].tableName
+        self.Database = self.controller.frames["StartPage"].Database
         self.groupSelection = self.controller.frames["PageOne"].groupList.curselection()
         self.groupFolders = [self.controller.frames["PageOne"].groupList.get(group) for group in self.groupSelection]
         print(self.groupFolders)
@@ -402,7 +421,26 @@ class PageTwo(Frame):
         self.startButton.config(state=DISABLED)
         self.backButton.config(state=DISABLED)
 
-        import time
+        # Use database.modifyTable() to add 10 rows with a random values in the columns Species, Lenght, Orientation, and GripPoints.
+        # The Species column should be either "Cod" or "Haddock".
+        # The Lenght column should be a random float between 30.0 and 100.0.
+        # The Orientation column should be a random integer between 0 and 180.
+        # The GripPoints column should be a random point, formatted as (x,y).
+        import random
+        print("Modifying table", self.tableName)
+        for i in range(50):
+            print("Fish {}".format(i+1))
+            ID = i+1
+            species = random.choice(["Cod", "Haddock", "Macrel", "Salmon", "Trout", "Tuna"])
+            lenght = random.uniform(20.0, 60.0)
+            orientation = (random.randint(0, 180), -random.randint(0, 180))
+            gripPoints = (random.randint(0, 100), random.randint(0, 100))
+            fishData = [ID, species, lenght, orientation[0], orientation[1], gripPoints[0], gripPoints[1]]
+            self.Database.addFish(self.tableName, fishData)
+
+
+
+        """import time
         self.progressBarAllGroups['value'] = 0
         for group in self.groupFolders:
             print(group)
@@ -415,7 +453,7 @@ class PageTwo(Frame):
                 self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1))
                 self.progressBarSeperateGroups['value'] += 20
                 self.update_idletasks()
-            self.update_idletasks()
+            self.update_idletasks()"""
         self.progressBarAllGroupsLabel.config(text="Done")
 
         # enable all buttons when identification is done
