@@ -31,13 +31,13 @@ class Main(Tk):
 
     def show_frame(self, page_name):
         if page_name == "StartPage":
-            self.title("Main Menu")
+            self.title("Identification: Main Menu")
             self.geometry("1000x800")
         elif page_name == "PageOne":
-            self.title("Select groups to identify")
+            self.title("Identification: Select groups to identify")
             self.geometry("1000x800")
         elif page_name == "PageTwo":
-            self.title("Showing Progess...")
+            self.title("Identification: Showing Progess...")
             self.geometry("1000x800")
         # Show a frame for the given page name
         frame = self.frames[page_name]
@@ -65,7 +65,7 @@ class StartPage(Frame):
         # to prevents user from validating one oath and then changing the path without validating again.
         self.modifiedEntry = False
 
-        self.titleText = Label(self, font=("Arial", "40"), text="Welcome to the fish zone", bg="royalblue2",
+        self.titleText = Label(self, font=("Arial", "40"), text="Fish Identification", bg="royalblue2",
                                fg="black").place(relx=0.5, rely=0.10, anchor=CENTER)
         self.startButton = Button(self, text="Start", command=lambda: self.start(),
                                   font=("Arial", "25"), bg="black", fg="white").place(relx=0.5, rely=0.75,
