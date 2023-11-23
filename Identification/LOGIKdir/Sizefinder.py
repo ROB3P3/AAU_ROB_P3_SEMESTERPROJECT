@@ -82,6 +82,7 @@ def findSize(image):
 
     fishLenght = []
     fishOrientation = []
+    averagePoints = []
     # List of RGB colors to differentiate between blobs later
     colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -216,10 +217,11 @@ def findSize(image):
                     invertedColors[i], 1, cv2.LINE_AA)
 
         fishOrientation.append(angles)
+        averagePoints.append(averagePoint)
 
     # print(fishLenght)
 
-    return fishLenght, fishOrientation, imagePlot
+    return fishLenght, fishOrientation, averagePoints
 
 
 if __name__ == "__main__":
