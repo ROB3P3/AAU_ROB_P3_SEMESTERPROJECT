@@ -3,33 +3,39 @@ import Documentation.DATAdir.DatabaseHandler as DatabaseHandler
 
 class LogbookCompiler:
     def __init__(self):
-        self.tableName = None
+        self.tableNameList = []
         self.Database = None
         self.logbook = []
         # create a dictionary with the minimum lenght of each species from the database.
-        self.minimumLenghtDict = {"Salmon": 30, "Tuna": 40, "Macrel": 10, "Cod": 30, "Trout": 10, "Haddock": 25}
-        self.fishAmountBMS = {"Salmon": 0, "Tuna": 0, "Macrel": 0, "Cod": 0, "Trout": 0, "Haddock": 0}
-        self.fishAmountNormal = {"Salmon": 0, "Tuna": 0, "Macrel": 0, "Cod": 0, "Trout": 0, "Haddock": 0}
-        self.fishSpecies = ["Salmon", "Tuna", "Macrel", "Cod", "Trout", "Haddock"]
+        self.minimumLenghtDict = {"Hake": 27, "Cod": 35, "Haddock": 30, "Whiting": 27, "Saithe": 35,
+                                  "Horse mackerel": 30,
+                                  "*others": 0}
+        self.fishAmountBMS = {"Hake": 0, "Cod": 0, "Haddock": 0, "Whiting": 0, "Saithe": 0, "Horse mackerel": 0,
+                              "*others": 0}
+        self.fishAmountNormal = {"Hake": 0, "Cod": 0, "Haddock": 0, "Whiting": 0, "Saithe": 0, "Horse mackerel": 0,
+                                 "*others": 0}
+        self.fishSpecies = ['Hake', 'Cod', 'Haddock', 'Whiting', 'Saithe', 'Horse mackerel', '*others']
 
-    def compile(self, IPAdress, port, tableName):
-        """Compiles the logbook"""
+    def compile(self, IPAdress, port, tableNameList):
+        """Compiles the logbook. Takes the IP Address and port of the mySQL server and a list of tables to go through."""
         self.Database = DatabaseHandler.Database(IPAdress, port)
-        self.tableName = tableName
-
+        self.tableNameList = tableNameList
 
         # Go through each row in the table and compare the lenght of the fish to the minimum lenght of the species in the minimumLenghtDict.
         # If the fish above the lenght, count it in fishAmountNormal.
         # If it is below the lenght, count it in fishAmountBMS.
-        for i in range(self.Database.pullRowAmount(self.tableName)):
-            fishSpecies, fishLenght,  = self.Database.pullRow(self.tableName, i+1)[1:3]
-            print("Fish lenght: {}".format(fishLenght), "Fish species: {}".format(fishSpecies))
-            if fishLenght >= self.minimumLenghtDict[fishSpecies]:
-                self.fishAmountNormal[fishSpecies] += 1
-            else:
-                self.fishAmountBMS[fishSpecies] += 1
+        for tableName in self.tableNameList:
+            print("tableName: {}".format(tableName[0]))
+            for i in range(self.Database.pullRowAmount(tableName[0])):
+                fishSpecies, fishLenght, = self.Database.pullRow(tableName[0], i + 1)[1:3]
+                print("Fish lenght: {}".format(fishLenght), "Fish species: {}".format(fishSpecies))
+                if fishLenght >= self.minimumLenghtDict[fishSpecies]:
+                    self.fishAmountNormal[fishSpecies] += 1
+                else:
+                    self.fishAmountBMS[fishSpecies] += 1
 
-        print("FishAmountNormal: {}".format(self.fishAmountNormal), "FishAmountBMS: {}".format(self.fishAmountBMS))
-        self.fishCount = [self.fishAmountNormal, self.fishAmountBMS]
-        self.logbook.append(self.fishCount)
+            # Append the fishAmountNormal and fishAmountBMS to the logbook, for each table.
+            fishCount = [self.fishAmountNormal, self.fishAmountBMS]
+            self.logbook.append(fishCount)
+        print(self.logbook)
         return self.logbook

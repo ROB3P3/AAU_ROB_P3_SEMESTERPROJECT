@@ -96,8 +96,7 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        #self.IPField.insert(tk.END, "172.26.51.10")
-        self.IPField.insert(tk.END, "192.168.50.101")
+        self.IPField.insert(tk.END, "172.26.51.10")
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
         self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
@@ -319,13 +318,13 @@ class StartPage(Frame):
         if self.pathReady and self.connectionReady and not self.modifiedEntry:
             # Check for tables named table_x in the mySQL database, and modify tableName to be one higher than the
             # highest table number. UNCOMMENT BELOW LATER
-            """while True:
+            while True:
                 if (self.tableName,) in self.Database.pullall():
                     self.tableName = self.tableName[:-1] + str(int(self.tableName[-1]) + 1)
                     print("Table name already exists, changing to {}".format(self.tableName))
                 else:
                     print("Table name is {}".format(self.tableName))
-                    break"""
+                    break
 
             # Create table in mySQL database
             print("Creating table")
@@ -351,6 +350,7 @@ class PageOne(Frame):
                                  font=("Arial", "25"), bg="black", fg="white")
         self.backButton.place(relx=0.9, rely=0.9, anchor=CENTER)
 
+        # Listbox to show all groups
         self.groupList = Listbox(self, selectmode="multiple", height=10, width=30, font=("Arial", "25"), bg="white",
                                  fg="black", justify='center')
         self.groupList.place(relx=0.5, rely=0.3, anchor=CENTER)
@@ -369,6 +369,7 @@ class PageOne(Frame):
         self.startButton.place(relx=0.5, rely=0.9, anchor=CENTER)
 
     def insertGroups(self, groupFolders):
+        self.groupList.delete(0, END)
         for group in groupFolders:
             self.groupList.insert(END, str(group))
             # self.groupList.itemconfig(str(group), bg="lime")
@@ -431,7 +432,7 @@ class PageTwo(Frame):
         for i in range(50):
             print("Fish {}".format(i+1))
             ID = i+1
-            species = random.choice(["Cod", "Haddock", "Macrel", "Salmon", "Trout", "Tuna"])
+            species = random.choice(['Hake', 'Cod', 'Haddock', 'Whiting', 'Saithe', 'Horse mackerel', '*others'])
             lenght = random.uniform(20.0, 60.0)
             orientation = (random.randint(0, 180), -random.randint(0, 180))
             gripPoints = (random.randint(0, 100), random.randint(0, 100))

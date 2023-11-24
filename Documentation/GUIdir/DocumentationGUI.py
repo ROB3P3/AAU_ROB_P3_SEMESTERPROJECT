@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
@@ -92,8 +91,7 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        # self.IPField.insert(tk.END, "172.26.51.10")
-        self.IPField.insert(tk.END, "192.168.50.101")
+        self.IPField.insert(tk.END, "172.26.51.10")
 
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
@@ -256,24 +254,13 @@ class StartPage(Frame):
                         self.connectionReady = True
                         self.modifiedEntry = False
 
-
     def startLogbook(self):
         """Goes to group selection page if path and connection are valid."""
         print("Entry modified? ", self.modifiedEntry)
         if self.pathReady and self.connectionReady and not self.modifiedEntry:
             print("Group selection")
+            self.controller.frames["PageOne"].insertGroups(self.Database.pullall())
             self.controller.show_frame("PageOne")
-
-        # print which of the requirements are not met
-        else:
-            if not self.pathReady:
-                print("Path is not valid")
-            if not self.connectionReady:
-                print("Connection is not valid")
-            if self.modifiedEntry:
-                print("Entry has been modified")
-
-
 
 
 class PageOne(Frame):
@@ -285,8 +272,22 @@ class PageOne(Frame):
         self.config(bg="royalblue2")
 
         self.LogbookCompiler = LogbookCompiler.LogbookCompiler()
+        self.selectedGroups = []
 
-        self.backButton = Button(self, text="Back", command=lambda: self.controller.show_frame("PageOne"),
+        # Listbox with all groups in the database is shown, so the user can select which groups to log.
+        self.groupList = Listbox(self, selectmode="multiple", height=10, width=30, font=("Arial", "25"), bg="white",
+                                 fg="black", justify='center')
+        self.groupList.place(relx=0.5, rely=0.3, anchor=CENTER)
+
+        # Two buttons underneath groupList to select and deselect all items.
+        self.selectAllButton = Button(self, text="Select all", command=lambda: self.groupList.select_set(0, END),
+                                      font=("Arial", "25"), bg="black", fg="white")
+        self.selectAllButton.place(relx=0.4, rely=0.7, anchor=CENTER)
+        self.deselectAllButton = Button(self, text="Deselect all", command=lambda: self.groupList.select_clear(0, END),
+                                        font=("Arial", "25"), bg="black", fg="white")
+        self.deselectAllButton.place(relx=0.6, rely=0.7, anchor=CENTER)
+
+        self.backButton = Button(self, text="Back", command=lambda: self.controller.show_frame("StartPage"),
                                  font=("Arial", "25"), bg="black", fg="white")
         self.backButton.place(relx=0.9, rely=0.9, anchor=CENTER)
 
@@ -294,11 +295,22 @@ class PageOne(Frame):
                                   font=("Arial", "25"), bg="black", fg="white")
         self.startButton.place(relx=0.5, rely=0.9, anchor=CENTER)
 
+    def insertGroups(self, groups):
+        """Inserts all groups from the database into the groupList."""
+        for group in groups:
+            self.groupList.insert(END, group)
 
     def startCompiling(self):
         """Starts compiling the logbook. Creates a LogbookCompiler object and runs the compile() method."""
-        logbook = self.LogbookCompiler.compile(self.controller.frames["StartPage"].IPAdress, self.controller.frames["StartPage"].port, self.controller.frames["StartPage"].tableName)
+        self.selectedGroups = []
+        # get the selected groups from the groupList
+        for i in self.groupList.curselection():
+            self.selectedGroups.append(self.groupList.get(i))
 
+        # if at least one group is selected, start compiling the logbook.
+        if len(self.selectedGroups) > 0:
+            logbook = self.LogbookCompiler.compile(self.controller.frames["StartPage"].IPAdress,
+                                                   self.controller.frames["StartPage"].port, self.selectedGroups)
 
 
 app = Main()
