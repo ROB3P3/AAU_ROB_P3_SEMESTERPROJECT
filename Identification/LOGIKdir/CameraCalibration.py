@@ -60,6 +60,8 @@ def getImageCalibration(path):
 
     # Extracting path of individual images stored in a given directory.
     images = glob.glob(path + "/calibration/*.png")
+    print(images)
+
 
     for fileName in images:
         name = fileName.rsplit('\\', 1)[-1]
@@ -124,7 +126,7 @@ def getImageCalibration(path):
 def calibrateImage(correctionValues, mainPath, outputPath):
     """Apllies the calibration values found in getImageCalibration() to the images in the group"""
     # Clear output folder to ensure only the newest files.
-    fishPath = mainPath + "fish/rgb/*.png"
+    fishPath = mainPath + "rs/rgb/*.png"
     outputPath = outputPath + "{}"
     clearDirectory(outputPath.format("*"))
 
@@ -160,7 +162,7 @@ if __name__ == "__main__":
 
     for group in groups:
         print("Running calibration for group {}".format(group))
-        mainPath = "C:/FishProject/Data/group_{}/"
-        outputPath = "C:/FishProject/Output/group_{}/WarpedCalibratedFish/"
+        mainPath = "C:/FishProject/group_{}/"
+        outputPath = "C:/FishProject/group_{}/output/WarpedCalibratedFish/"
         calibration = getImageCalibration(mainPath.format(group))
         calibrateImage(calibration, mainPath.format(group), outputPath.format(group))
