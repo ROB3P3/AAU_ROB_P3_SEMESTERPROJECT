@@ -4,6 +4,7 @@ import open3d as o3d
 import json
 import os
 from PIL import Image, ImageFilter
+import threading as th
 
 #******************************************* Class maed for dynamic cropping of AOI ****************************************
 
@@ -284,20 +285,20 @@ def seperate(imageThreshold, imageEdges):
         cv2.drawContours(imageErode,[cnt],0,255,-2)
     return imageErode
 
-if __name__ == "__main__":
-#def isolate():
+#if __name__ == "__main__":
+def isolate():
     groups = [4]
     imageNum = 66
     cropper = Cropper()
 
     for group in groups:
-        rootPath = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
-        outputPath = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
+        rootPath = "C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
+        outputPath = "C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
         
+        if not os.path.exists("E:/Data fra testing af p3/IsolatedImages/group_{}".format(group)):
+                os.makedirs("E:/Data fra testing af p3/IsolatedImages/group_{}".format(group))
+                
         for i in range(2, imageNum + 1):
-
-            if not os.path.exists("D:/P3OutData/Meged/group_{}T".format(group)):
-                os.makedirs("D:/P3OutData/Meged/group_{}T".format(group))
 
             print("group_{}: {}".format(group, i))
             if i < 10:
@@ -319,7 +320,7 @@ if __name__ == "__main__":
             imageEdges = findEdge(RGBImage)
             SeperatedThresholdedImage = seperate(thresholdedImage, imageEdges)
 
-            os.chdir("D:/P3OutData/Meged/group_{}T".format(group))
+            os.chdir("E:/Data fra testing af p3/IsolatedImages/group_{}".format(group))
             cv2.imwrite("0000" + str(i) + "Cp.png", cropedImage)
             cv2.imwrite("0000" + str(i) + "Th.png", thresholdedImage)
             cv2.imwrite("0000" + str(i) + "Final.png", SeperatedThresholdedImage)

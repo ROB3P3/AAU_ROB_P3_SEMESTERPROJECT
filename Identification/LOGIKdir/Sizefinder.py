@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import math
 import IsolatingFish2
+import os
 
 
 def showImage(images):
@@ -82,7 +83,6 @@ def findSize(image):
 
     fishLenght = []
     fishOrientation = []
-    averagePoints = []
     # List of RGB colors to differentiate between blobs later
     colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -217,29 +217,25 @@ def findSize(image):
                     invertedColors[i], 1, cv2.LINE_AA)
 
         fishOrientation.append(angles)
-        averagePoints.append(averagePoint)
 
     # print(fishLenght)
 
-    return fishLenght, fishOrientation, averagePoints
+    return fishLenght, fishOrientation, imagePlot
 
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    images = glob.glob(r"DATAdir/RGB/Group9/WarpedCalibratedFish/*.png")
-    print(images)
-=======
-    IsolatingFish2.isolate()
-    images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
-    OGImages = glob.glob(r"C:\Users\fhp89\OneDrive - Aalborg Universitet\autofish_rob3\group_4\rs\rgb/*.png")
->>>>>>> Stashed changes
+    #IsolatingFish2.isolate()
+    images = glob.glob(r"E:\Data fra testing af p3\IsolatedImages\group_4/*Final.png")
+    OGImages = glob.glob(r"C:\Users\frderik\OneDrive - Aalborg Universitet\autofish_rob3\group_4\rs\rgb/*.png")
+    os.chdir(r"E:\Data fra testing af p3\IsolatedImages\group_4_Size")
     for i, fileName in enumerate(images):
         if i > 0:
             imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
             image = cv2.imread(OGImages[i])
-            #imageThreshold = IsolatingFish.isolateFish(image)
+            #imageThreshold = IsolatingFish2.isolateFish(image)
             fishLenghts, fishOrientations, annotatedImage = findSize(imageThreshold)
             annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
             imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
             print(fileName)
-            showImage([imageS, annotatedImageS])
+            cv2.imwrite("Size000"+str(i)+".png",annotatedImage)
+            #showImage([image, annotatedImage])
