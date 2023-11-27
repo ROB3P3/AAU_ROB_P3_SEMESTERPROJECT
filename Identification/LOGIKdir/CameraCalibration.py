@@ -127,14 +127,17 @@ def calibrateImage(correctionValues, mainPath, outputPath):
     """Apllies the calibration values found in getImageCalibration() to the images in the group"""
     # Clear output folder to ensure only the newest files.
     fishPath = mainPath + "rs/rgb/*.png"
-    outputPath = outputPath + "{}"
-    clearDirectory(outputPath.format("*"))
+    calibrationPath = mainPath + "calibration/*.png"
+    outputPathFish = outputPath + "WarpedCalibratedFish/{}"
+    outputPathCalibration = outputPath + "WarpedCalibratedCheckerboard/{}"
+    # Clear both output folders
+    clearDirectory(outputPathFish.format("*"))
+    clearDirectory(outputPathCalibration.format("*"))
 
     # Get all images to calibrate
-    images = glob.glob(fishPath)
+    fishImages = glob.glob(fishPath)
     retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
-    i = 1
-    for fileName in images:
+    for fileName in fishImages:
         name = fileName.rsplit('\\', 1)[-1]
         image = cv2.imread(fileName)
 
@@ -150,10 +153,34 @@ def calibrateImage(correctionValues, mainPath, outputPath):
         imageUndistorted = imageUndistorted[y:y + height, x:x + width]
 
         # showImage([imageUndistorted])
-        newFileName = outputPath.format("calibrated" + fileName.rsplit('\\', 1)[-1])
-        i += 1
+        newFileName = outputPathFish.format("calibrated" + fileName.rsplit('\\', 1)[-1])
 
         cv2.imwrite(newFileName, imageUndistorted)
+
+
+    # Get all calibration images to calibrate
+    calibrationImages = glob.glob(calibrationPath)
+    # Write all calibration images to the output folder
+    for fileName in calibrationImages:
+        name = fileName.rsplit('\\', 1)[-1]
+        image = cv2.imread(fileName)
+
+        # Warp perspective on the fish images.
+        image = WarpPerspective(image, name)
+
+        # Calibrate the warped image of fish.
+        print("Calibrating {} image {}.".format(calibrationPath.rsplit("/", 1)[-2], name))
+        imageUndistorted = cv2.undistort(image, matrix, distortion, None, newCameraMatrix)
+
+        # Crop image to region of interest
+        x, y, width, height = regionsOfInterest
+        imageUndistorted = imageUndistorted[y:y + height, x:x + width]
+
+        # showImage([imageUndistorted])
+        newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
+        print("Writing to: ", newFileName)
+        cv2.imwrite(newFileName, imageUndistorted)
+
     #print("Finished warping and calibrating all fish images in group {}.".format(group))
 
 
@@ -163,6 +190,6 @@ if __name__ == "__main__":
     for group in groups:
         print("Running calibration for group {}".format(group))
         mainPath = "C:/FishProject/group_{}/"
-        outputPath = "C:/FishProject/group_{}/output/WarpedCalibratedFish/"
+        outputPath = "C:/FishProject/group_{}/output/"
         calibration = getImageCalibration(mainPath.format(group))
         calibrateImage(calibration, mainPath.format(group), outputPath.format(group))
