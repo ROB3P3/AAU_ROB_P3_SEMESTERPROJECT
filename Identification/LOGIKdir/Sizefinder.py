@@ -2,7 +2,7 @@ import glob
 import cv2
 import numpy as np
 import math
-import IsolatingFish
+import IsolatingFish2
 
 
 def showImage(images):
@@ -225,11 +225,21 @@ def findSize(image):
 
 
 if __name__ == "__main__":
+<<<<<<< Updated upstream
     images = glob.glob(r"DATAdir/RGB/Group9/WarpedCalibratedFish/*.png")
     print(images)
+=======
+    IsolatingFish2.isolate()
+    images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
+    OGImages = glob.glob(r"C:\Users\fhp89\OneDrive - Aalborg Universitet\autofish_rob3\group_4\rs\rgb/*.png")
+>>>>>>> Stashed changes
     for i, fileName in enumerate(images):
         if i > 0:
-            image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
-            imageThreshold = IsolatingFish.isolateFish(image)
+            imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+            image = cv2.imread(OGImages[i])
+            #imageThreshold = IsolatingFish.isolateFish(image)
             fishLenghts, fishOrientations, annotatedImage = findSize(imageThreshold)
-            showImage([annotatedImage, image])
+            annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
+            imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
+            print(fileName)
+            showImage([imageS, annotatedImageS])
