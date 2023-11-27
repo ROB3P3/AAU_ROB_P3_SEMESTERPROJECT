@@ -226,6 +226,7 @@ def findSize(image):
 
 if __name__ == "__main__":
     images = glob.glob(r"DATAdir/RGB/Group9/WarpedCalibratedFish/*.png")
+    print(images)
     for i, fileName in enumerate(images):
         if i > 0:
             image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
