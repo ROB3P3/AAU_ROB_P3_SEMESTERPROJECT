@@ -224,7 +224,7 @@ def findSize(image):
 
 
 if __name__ == "__main__":
-    #IsolatingFish2.isolate()
+    IsolatingFish2.isolate()
     images = glob.glob(r"E:\Data fra testing af p3\IsolatedImages\group_4/*Final.png")
     OGImages = glob.glob(r"C:\Users\frderik\OneDrive - Aalborg Universitet\autofish_rob3\group_4\rs\rgb/*.png")
     os.chdir(r"E:\Data fra testing af p3\IsolatedImages\group_4_Size")

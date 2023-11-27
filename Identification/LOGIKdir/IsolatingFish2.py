@@ -323,4 +323,5 @@ def isolate():
             os.chdir("E:/Data fra testing af p3/IsolatedImages/group_{}".format(group))
             cv2.imwrite("0000" + str(i) + "Cp.png", cropedImage)
             cv2.imwrite("0000" + str(i) + "Th.png", thresholdedImage)
+            cv2.imwrite("0000" + str(i) + "Edge.png", imageEdges)
             cv2.imwrite("0000" + str(i) + "Final.png", SeperatedThresholdedImage)
