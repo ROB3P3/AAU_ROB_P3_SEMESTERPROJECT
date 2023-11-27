@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import glob
 import os
+import Identification.LOGIKdir.AutoCrop as AutoCrop
 
 
 def clearDirectory(path):
@@ -26,10 +27,17 @@ def showImage(images):
 def WarpPerspective(image, fileName):
     """Warp the perspective of a 1920x1080 PNG in group 9 image to help account for the angle of the camera.
     Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
+    cropper = AutoCrop.Cropper(image)
+    minX = cropper.crop()
+    leftX1 = minX + 67
+    leftX2 = minX + 70
+    rightX1 = minX + 1235
+    rightX2 = minX + 1270
+
 
     # Points in the orignal image indicating where to warp perspective to.
     # Change to use automatic detection of points.
-    orignalPoints = np.float32([[666, 0], [677, 1080], [1824, 0], [1864, 1080]])
+    orignalPoints = np.float32([[leftX1, 0], [leftX2, 1080], [rightX1, 0], [rightX2, 1080]])
     # What the originalPoints new values should be in the perspective warped image
     newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
     # Warp all checkerboard images and put them in their own folder.
@@ -138,7 +146,7 @@ def calibrateImage(correctionValues, mainPath, outputPath):
     # Get all images to calibrate
     fishImages = glob.glob(fishPath)
     retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
-    for fileName in fishImages:
+    """for fileName in fishImages:
         name = fileName.rsplit('\\', 1)[-1]
         image = cv2.imread(fileName)
 
@@ -156,7 +164,7 @@ def calibrateImage(correctionValues, mainPath, outputPath):
         # showImage([imageUndistorted])
         newFileName = outputPathFish.format("calibrated" + fileName.rsplit('\\', 1)[-1])
 
-        cv2.imwrite(newFileName, imageUndistorted)
+        cv2.imwrite(newFileName, imageUndistorted)"""
 
 
     # Get all calibration images to calibrate
@@ -194,3 +202,4 @@ if __name__ == "__main__":
         outputPath = "C:/FishProject/group_{}/output/"
         calibration = getImageCalibration(mainPath.format(group))
         calibrateImage(calibration, mainPath.format(group), outputPath.format(group))
+        break
