@@ -28,6 +28,7 @@ def WarpPerspective(image, fileName):
     Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
 
     # Points in the orignal image indicating where to warp perspective to.
+    # Change to use automatic detection of points.
     orignalPoints = np.float32([[666, 0], [677, 1080], [1824, 0], [1864, 1080]])
     # What the originalPoints new values should be in the perspective warped image
     newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
