@@ -6,6 +6,7 @@ import IsolatingFish2
 import os
 import time
 import multiprocessing as mp
+from fractions import Fraction
 
 
 def showImage(images):
@@ -268,20 +269,32 @@ if __name__ == "__main__":
     groups = [10]#[10, 14, 20, 21, 22] # The groups the program is goinf through
 
     for group in groups:
-        images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group)) # OBS!!!!! Change to directory to Data set png's
-        outputDataRootPath = "D:/P3OutData/Merged" # where you want the program to create it's data folders
+        pathInputRoot = "C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3"
+        images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group)) # OBS!!!!! Change to directory to Data set png's
+        outputDataRootPath = "G:/P3OutData/Merged" # where you want the program to create it's data folders
         pathingSetup(group, outputDataRootPath)
-        numberOfThreads = 12 # OBS!!!!! chose the amount of threds to use
+        numberOfThreads = 16 # OBS!!!!! chose the amount of threds to use
         picturesPerGroup = 66
+        
         process = []
-        indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1]+1)
+        indexJump = int(math.modf(66/numberOfThreads)[1])
+        optimizeFraction = Fraction(math.modf(66/numberOfThreads)[0]).limit_denominator(1000000)
+        Offset = (numberOfThreads/optimizeFraction.denominator)*optimizeFraction.numerator
+        indexOffsetEnd = 0
+        indexOffsetStart = 0
         for i in range(numberOfThreads):
+            if Offset != 0:
+                indexOffsetEnd +=1
+                Offset -= 1
             if i == 0:
-                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump],1,group, outputDataRootPath)))
+                if Offset != 0:
+                    indexOffsetEnd +=1
+                    Offset -= 1
+                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath)))
             elif i == numberOfThreads-1:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:67],i*indexJump,group, outputDataRootPath)))
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:67],i*indexJump+indexOffsetStart,group, outputDataRootPath)))
             else:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:(i+1)*indexJump],i*indexJump,group, outputDataRootPath)))
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath)))
         
         for element in process:
             element.start()
