@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 import math
 import IsolatingFish2
+import os
+import time
+
 
 
 def showImage(images):
@@ -77,12 +80,11 @@ def blobProperties(contours):
     return properties, positions
 
 
-def findSize(image):
+def findSize(image, originalImage):
     """Function to find the area and lenght of a fish(blob). image -> binary"""
 
     fishLenght = []
     fishOrientation = []
-    averagePoints = []
     # List of RGB colors to differentiate between blobs later
     colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -123,6 +125,8 @@ def findSize(image):
         mininumPointY = positions[i][2]
         maximumPointY = positions[i][3]
         pointsMinMaxXY = [mininumPointX, maximumPointX, mininumPointY, maximumPointY]
+
+        originalImage = cv2.rectangle(originalImage,[mininumPointX[0],mininumPointY[1]], [maximumPointX[0],maximumPointY[1]], colours[i], 2)
 
         cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
@@ -217,29 +221,33 @@ def findSize(image):
                     invertedColors[i], 1, cv2.LINE_AA)
 
         fishOrientation.append(angles)
-        averagePoints.append(averagePoint)
 
     # print(fishLenght)
 
-    return fishLenght, fishOrientation, averagePoints
+    return fishLenght, fishOrientation, imagePlot, originalImage
+
 
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    images = glob.glob(r"DATAdir/RGB/Group9/WarpedCalibratedFish/*.png")
-    print(images)
-=======
-    IsolatingFish2.isolate()
-    images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
-    OGImages = glob.glob(r"C:\Users\fhp89\OneDrive - Aalborg Universitet\autofish_rob3\group_4\rs\rgb/*.png")
->>>>>>> Stashed changes
-    for i, fileName in enumerate(images):
-        if i > 0:
-            imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
-            image = cv2.imread(OGImages[i])
-            #imageThreshold = IsolatingFish.isolateFish(image)
-            fishLenghts, fishOrientations, annotatedImage = findSize(imageThreshold)
-            annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
-            imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
-            print(fileName)
-            showImage([imageS, annotatedImageS])
+    startTime = time.time()
+    #IsolatingFish2.isolate()
+    #images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
+    groups = [10, 14, 20, 21, 22]
+    for group in groups:
+        images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group))
+        for i, fileName in enumerate(images):
+            if i > 0:
+                imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+                image = cv2.imread(fileName)
+                imageThreshold = IsolatingFish2.isolate(fileName, i+1, group)
+                fishLenghts, fishOrientations, annotatedImage, boundingBoxImage = findSize(imageThreshold, image)
+                #annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
+                #imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
+                print(fileName)
+                #showImage([imageS, annotatedImageS])
+                if not os.path.exists("D:/P3OutData/Meged/group_{}/size".format(group)):
+                    os.makedirs("D:/P3OutData/Meged/group_{}/size".format(group))
+                os.chdir("D:/P3OutData/Meged/group_{}/size".format(group))
+                cv2.imwrite("size"+str(i+1)+".png",annotatedImage)
+                cv2.imwrite("OG"+str(i+1)+".png",boundingBoxImage)
+    print("TIME:", str(startTime-time.time()))

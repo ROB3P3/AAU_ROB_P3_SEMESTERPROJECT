@@ -50,7 +50,7 @@ class Cropper:
             # drawn. In this case, it is red.
             # This if statments only lets approxemetly vertical lines be saved
             if abs(y1-y2) > 100 and abs(x1-x2) < 100:
-                if x0 < self.minx:
+                if x0 < self.minx and x0 > 550:
                     self.minx = x0
                     cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
@@ -63,7 +63,7 @@ class Cropper:
         for y, row in enumerate(self.imgCropped):
             for x, pixel in enumerate(row):
                 # +70 to go from the outer edge on the conveyobelt to the eged by the conveyor bed. Found frome trial and error, the same goes for +1200
-                if x < self.minx+70 or x > self.minx+1240:
+                if x < self.minx+70 or x > self.minx+1220:
                     self.imgCropped[y][x] = 255
         self.xStart = self.minx + 70
         self.xEnd = self.minx + 1240
@@ -128,7 +128,8 @@ def thresholdImageBlue(image):
 
 def thresholdImage(RGBImage, xStart, xEnd):
     """Thresholds image based on color and shape"""
-    print("Colour TH:")
+    print("Thresholding colour:")
+    # Finds path to RGB image of corresponding depth data
     image = cv2.cvtColor(RGBImage, cv2.COLOR_BGR2GRAY)
     # Applies a median filter with radius 10
     medianBlurImage = cv2.medianBlur(image, (10*2)+1)
@@ -146,15 +147,14 @@ def thresholdImage(RGBImage, xStart, xEnd):
         for x, col in enumerate(row):
             if (x < xStart and col == 255) or (x > xEnd and col == 255):
                 medianBlurImage2[y][x] = 0
-            
-    
+
     # Fills holes 
     filledImage = fillHoles(medianBlurImage2)
     return filledImage
 
 def thresholdDepthMap(path):
     """Thresholds the depth map to isolate the fish"""
-    print("Depth TH:")
+    print("Thresholding depth:")
     rawDepthImage = o3d.io.read_image(path)
     jsonFilePath = path.replace(".png", ".json")
     
@@ -171,7 +171,6 @@ def thresholdDepthMap(path):
         intrinsics['cx'], 
         intrinsics['cy'],
     )
-
     
     # Create depth pointclouds from depth-data
     rgbFilePath = path.replace("depth", "rgb")
@@ -263,7 +262,7 @@ def findEdge(image):
     imageGraBlur = cv2.medianBlur(imageGray,7)
 
     # udgangspunkt var 90, 190
-    imageEdgeBlur = cv2.Canny(imageGraBlur,50,190)
+    imageEdgeBlur = cv2.Canny(imageGraBlur,60,190)
 
     element = cv2.getStructuringElement(1, (2 * 2 + 1, 2 * 2 + 1),
                                         (2, 2))
@@ -284,42 +283,40 @@ def seperate(imageThreshold, imageEdges):
         cv2.drawContours(imageErode,[cnt],0,255,-2)
     return imageErode
 
-if __name__ == "__main__":
-#def isolate():
+#if __name__ == "__main__":
+def isolate(path, number, group):
     groups = [4]
     imageNum = 66
     cropper = Cropper()
-
-    for group in groups:
-        rootPath = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
-        outputPath = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}".format(group)
         
-        for i in range(2, imageNum + 1):
 
-            if not os.path.exists("D:/P3OutData/Meged/group_{}T".format(group)):
-                os.makedirs("D:/P3OutData/Meged/group_{}T".format(group))
+    if not os.path.exists("D:/P3OutData/Meged/group_{}/THData".format(group)):
+        os.makedirs("D:/P3OutData/Meged/group_{}/THData".format(group))
+    if not os.path.exists("D:/P3OutData/Meged/group_{}/finalTH".format(group)):
+        os.makedirs("D:/P3OutData/Meged/group_{}/finalTH".format(group))
 
-            print("group_{}: {}".format(group, i))
-            if i < 10:
-                imagePath = rootPath + "/rs/depth/0000" + str(i) + ".png"
-            else:
-                imagePath = rootPath + "/rs/depth/000" + str(i) + ".png"
-            RGBImagePath = imagePath.replace("depth", "rgb")
+    imagePath = path.replace("rgb", "depth")
+    RGBImage = cv2.imread(path)
+    cropper.setImage(RGBImage)
+    cropper.crop()
+    cropedImage = cropper.imgCropped
 
-            RGBImage = cv2.imread(RGBImagePath)
-            cropper.setImage(RGBImage)
-            cropper.crop()
-            cropedImage = cropper.imgCropped
+    colourThrsholdedImage = thresholdImage(RGBImage, cropper.xStart, cropper.xEnd)
+    depthThresholding = thresholdDepthMap(imagePath)
 
-            colourThrsholdedImage = thresholdImage(RGBImage, cropper.xStart, cropper.xEnd)
-            
-            thresholdedImage = thresholdDepthMap(imagePath) + colourThrsholdedImage
+    thresholdedImage = depthThresholding + colourThrsholdedImage
 
-            thresholdedImage = fillHoles(thresholdedImage)
-            imageEdges = findEdge(RGBImage)
-            SeperatedThresholdedImage = seperate(thresholdedImage, imageEdges)
+    thresholdedImage = fillHoles(thresholdedImage)
+    imageEdges = findEdge(RGBImage)
+    SeperatedThresholdedImage = seperate(thresholdedImage, imageEdges)
 
-            os.chdir("D:/P3OutData/Meged/group_{}T".format(group))
-            cv2.imwrite("0000" + str(i) + "Cp.png", cropedImage)
-            cv2.imwrite("0000" + str(i) + "Th.png", thresholdedImage)
-            cv2.imwrite("0000" + str(i) + "Final.png", SeperatedThresholdedImage)
+    os.chdir("D:/P3OutData/Meged/group_{}/THData".format(group))
+    cv2.imwrite("0000" + str(number) + "Cp.png", cropedImage)
+    cv2.imwrite("0000" + str(number) + "Th.png", thresholdedImage)
+    cv2.imwrite("0000" + str(number) + "Final.png", SeperatedThresholdedImage)
+    cv2.imwrite("0000" + str(number) + "Edge.png", imageEdges)
+    cv2.imwrite("0000" + str(number) + "ColourTH.png", colourThrsholdedImage)
+    cv2.imwrite("0000" + str(number) + "DepthTH.png", depthThresholding)
+    os.chdir("D:/P3OutData/Meged/group_{}/finalTH".format(group))
+    cv2.imwrite("0000" + str(number) + "Final.png", SeperatedThresholdedImage)
+    return(SeperatedThresholdedImage)

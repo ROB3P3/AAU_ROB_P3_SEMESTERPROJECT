@@ -56,5 +56,3 @@ for i in range(0): # var 65
         imageE = cv2.imread("000"+str(i)+"Edge.png",cv2.IMREAD_GRAYSCALE)
         os.chdir("D:/P3DataOut/group_4")
         cv2.imwrite("000"+str(i)+"Final.png", seperate(imageT,imageE))
-
-
