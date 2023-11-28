@@ -67,7 +67,7 @@ class Cropper:
                 if x < self.minx+70 or x > self.minx+1220:
                     self.imgCropped[y][x] = 255
         self.xStart = self.minx + 70
-        self.xEnd = self.minx + 1240
+        self.xEnd = self.minx + 1220
 
 #******************************************* Functions for thresholding ****************************************
 def fillHoles(image):
@@ -285,16 +285,8 @@ def seperate(imageThreshold, imageEdges):
     return imageErode
 
 #if __name__ == "__main__":
-def isolate(path, number, group):
-    groups = [4]
-    imageNum = 66
+def isolate(path, number, group, outputDataRootPath):
     cropper = Cropper()
-        
-
-    if not os.path.exists("D:/P3OutData/Meged/group_{}/THData".format(group)):
-        os.makedirs("D:/P3OutData/Meged/group_{}/THData".format(group))
-    if not os.path.exists("D:/P3OutData/Meged/group_{}/finalTH".format(group)):
-        os.makedirs("D:/P3OutData/Meged/group_{}/finalTH".format(group))
 
     imagePath = path.replace("rgb", "depth")
     RGBImage = cv2.imread(path)
@@ -311,13 +303,29 @@ def isolate(path, number, group):
     imageEdges = findEdge(RGBImage)
     SeperatedThresholdedImage = seperate(thresholdedImage, imageEdges)
 
-    os.chdir("D:/P3OutData/Meged/group_{}/THData".format(group))
-    cv2.imwrite("0000" + str(number) + "Cp.png", cropedImage)
-    cv2.imwrite("0000" + str(number) + "Th.png", thresholdedImage)
+    os.chdir("{}/group_{}/THData".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "CP.png", cropedImage)
+    cv2.imwrite("0000" + str(number) + "TH.png", thresholdedImage)
     cv2.imwrite("0000" + str(number) + "Final.png", SeperatedThresholdedImage)
     cv2.imwrite("0000" + str(number) + "Edge.png", imageEdges)
     cv2.imwrite("0000" + str(number) + "ColourTH.png", colourThrsholdedImage)
     cv2.imwrite("0000" + str(number) + "DepthTH.png", depthThresholding)
-    os.chdir("D:/P3OutData/Meged/group_{}/finalTH".format(group))
+
+
+
+
+    os.chdir("{}/group_{}/CP".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "CP.png", cropedImage)
+    os.chdir("{}/group_{}/THSum".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "THSum.png", thresholdedImage)
+    os.chdir("{}/group_{}/FinalTH".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "Final.png", SeperatedThresholdedImage)
+    os.chdir("{}/group_{}/Edge".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "Edge.png", imageEdges)
+    os.chdir("{}/group_{}/ColourTH".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "ColourTH.png", colourThrsholdedImage)
+    os.chdir("{}/group_{}/DepthTH".format(outputDataRootPath, group))
+    cv2.imwrite("0000" + str(number) + "DepthTH.png", depthThresholding)
+    os.chdir("{}/group_{}/FinalTH".format(outputDataRootPath, group))
     cv2.imwrite("0000" + str(number) + "Final.png", SeperatedThresholdedImage)
     return(SeperatedThresholdedImage)

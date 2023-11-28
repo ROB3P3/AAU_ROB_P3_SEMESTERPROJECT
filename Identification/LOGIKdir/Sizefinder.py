@@ -226,42 +226,62 @@ def findSize(image, originalImage):
 
     return fishLenght, fishOrientation, imagePlot, originalImage
 
-def taskHandeler(indexFileNameList, startingNumber, group):
+def pathingSetup(group, rootPath):
+    if not os.path.exists("{}/group_{}/Size".format(rootPath, group)):
+        os.makedirs("{}/group_{}/Size".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/THData".format(rootPath, group)):
+        os.makedirs("{}/group_{}/THData".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/FinalTH".format(rootPath, group)):
+        os.makedirs("{}/group_{}/FinalTH".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/DepthTH".format(rootPath, group)):
+        os.makedirs("{}/group_{}/DepthTH".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/CP".format(rootPath, group)):
+        os.makedirs("{}/group_{}/CP".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/Edge".format(rootPath, group)):
+        os.makedirs("{}/group_{}/Edge".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/ColourTH".format(rootPath, group)):
+        os.makedirs("{}/group_{}/ColourTH".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/THSum".format(rootPath, group)):
+        os.makedirs("{}/group_{}/THSum".format(rootPath, group))
+
+
+
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath):
     for i, fileName in enumerate(indexFileNameList):
             i += startingNumber
             imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
             image = cv2.imread(fileName)
-            imageThreshold = IsolatingFish2.isolate(fileName, i+1, group)
+            imageThreshold = IsolatingFish2.isolate(fileName, i+1, group, outputDataRootPath)
             fishLenghts, fishOrientations, annotatedImage, boundingBoxImage = findSize(imageThreshold, image)
             #annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
             #imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
             print(fileName)
             #showImage([imageS, annotatedImageS])
-            if not os.path.exists("D:/P3OutData/Meged/group_{}/size".format(group)):
-                os.makedirs("D:/P3OutData/Meged/group_{}/size".format(group))
-            os.chdir("D:/P3OutData/Meged/group_{}/size".format(group))
+            
+            os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
             cv2.imwrite("size"+str(i+1)+".png",annotatedImage)
             cv2.imwrite("OG"+str(i+1)+".png",boundingBoxImage)
 
 
 if __name__ == "__main__":
-    
     startTime = time.time()
-    #IsolatingFish2.isolate()
-    #images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
-    groups = [10, 14, 20, 21, 22]
+    groups = [10]#[10, 14, 20, 21, 22] # The groups the program is goinf through
+
     for group in groups:
-        images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group))
+        images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group)) # OBS!!!!! Change to directory to Data set png's
+        outputDataRootPath = "D:/P3OutData/Merged" # where you want the program to create it's data folders
+        pathingSetup(group, outputDataRootPath)
         numberOfThreads = 12 # OBS!!!!! chose the amoung ti threds to use
+        picturesPerGroup = 66
         process = []
-        indexJump = int(math.modf(66/numberOfThreads)[1]+1)
+        indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1]+1)
         for i in range(numberOfThreads):
             if i == 0:
-                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump],1,group)))
+                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump],1,group, outputDataRootPath)))
             elif i == numberOfThreads-1:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:67],i*indexJump,group)))
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:67],i*indexJump,group, outputDataRootPath)))
             else:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:(i+1)*indexJump],i*indexJump,group)))
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:(i+1)*indexJump],i*indexJump,group, outputDataRootPath)))
         
         for element in process:
             element.start()
