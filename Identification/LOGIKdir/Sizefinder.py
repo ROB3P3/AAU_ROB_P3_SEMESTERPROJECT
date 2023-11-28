@@ -193,12 +193,9 @@ def findSize(image):
         angles = (angle1, angle2)
         print("Angle between extremes: ", angleBetweenExtremes)
 
-        """lenghtBetweenExtremes = math.sqrt(
-            (extremePoint2[0] - extremePoint1[0]) ** 2 + (extremePoint2[1] - extremePoint1[1]) ** 2)"""
-
         # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
         # then use the extreme point which is third furthest away from the average point as extreme point 2.
-        if -45 < angleBetweenExtremes < 45:
+        if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
             print("Sorted lists")
             print(sorted(lenghts, reverse=True))
             lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
@@ -210,15 +207,6 @@ def findSize(image):
                                  (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
             angleBetweenExtremes = angle1 - angle2
 
-        cv2.putText(imagePlot, str(round(angleBetweenExtremes)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(angleBetweenExtremes)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
-
-        cv2.putText(imagePlot, str(round(angleBetweenExtremes)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(angleBetweenExtremes)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
 
         # calculate total pixel lenght of fish.
         totalLenght = float(sum(sorted(lenghts)[2:]))
@@ -276,7 +264,7 @@ def findSize(image):
 
     # print(fishLenght)
 
-    return fishLenght, fishOrientation, averagePoints, imagePlot, image
+    return fishLenght, fishOrientation, averagePoints, imagePlot
 
 
 if __name__ == "__main__":
@@ -291,8 +279,11 @@ if __name__ == "__main__":
 
         image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
         # imageThreshold = IsolatingFish.isolateFish(image)
-        fishLenghts, fishOrientations, averagePoints, annotatedImage, averageImage = findSize(image)
+        fishLenghts, fishOrientations, averagePoints, annotatedImage = findSize(image)
         annotatedImage = cv2.resize(annotatedImage, (960, 960))
         imageList.append(annotatedImage)
+        """cv2.imwrite(
+            "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Comparison/" + name + "Program.png",
+            annotatedImage)"""
 
     browseImages(imageList)
