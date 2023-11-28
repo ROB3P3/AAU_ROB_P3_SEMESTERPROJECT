@@ -271,7 +271,7 @@ if __name__ == "__main__":
         images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group)) # OBS!!!!! Change to directory to Data set png's
         outputDataRootPath = "D:/P3OutData/Merged" # where you want the program to create it's data folders
         pathingSetup(group, outputDataRootPath)
-        numberOfThreads = 12 # OBS!!!!! chose the amoung ti threds to use
+        numberOfThreads = 12 # OBS!!!!! chose the amount of threds to use
         picturesPerGroup = 66
         process = []
         indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1]+1)
