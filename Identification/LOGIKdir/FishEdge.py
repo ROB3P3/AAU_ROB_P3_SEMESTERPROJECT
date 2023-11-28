@@ -20,12 +20,12 @@ for i in range(66):
     i += 1
     print(i)
     if i < 10:
-        image = cv2.imread("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_4/rs/rgb/0000" + str(i) + ".png")
-        os.chdir("D:/P3DATA/Edges")
+        image = cv2.imread("C:/Users/frederik/OneDrive - Aalborg Universitet/autofish_rob3/group_4/rs/rgb/0000" + str(i) + ".png")
+        os.chdir("E:\Data fra testing af p3\IsolatedImages\Edges")
         cv2.imwrite("0000"+str(i)+"Edge.png", findEdge(image))
     else:
-        image = cv2.imread("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_4/rs/rgb/000" + str(i) + ".png")
-        os.chdir("D:/P3DATA/Edges")
+        image = cv2.imread("C:/Users/frederik/OneDrive - Aalborg Universitet/autofish_rob3/group_4/rs/rgb/000" + str(i) + ".png")
+        os.chdir("E:\Data fra testing af p3\IsolatedImages\Edges")
         cv2.imwrite("000"+str(i)+"Edge.png", findEdge(image))
 
 def seperate(imageT, imageE):
