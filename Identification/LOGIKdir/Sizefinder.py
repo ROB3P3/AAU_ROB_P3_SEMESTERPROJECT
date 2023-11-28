@@ -5,7 +5,7 @@ import math
 import IsolatingFish2
 import os
 import time
-
+import multiprocessing as mp
 
 
 def showImage(images):
@@ -226,28 +226,47 @@ def findSize(image, originalImage):
 
     return fishLenght, fishOrientation, imagePlot, originalImage
 
+def taskHandeler(indexFileNameList, startingNumber, group):
+    for i, fileName in enumerate(indexFileNameList):
+            i += startingNumber
+            imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+            image = cv2.imread(fileName)
+            imageThreshold = IsolatingFish2.isolate(fileName, i+1, group)
+            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage = findSize(imageThreshold, image)
+            #annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
+            #imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
+            print(fileName)
+            #showImage([imageS, annotatedImageS])
+            if not os.path.exists("D:/P3OutData/Meged/group_{}/size".format(group)):
+                os.makedirs("D:/P3OutData/Meged/group_{}/size".format(group))
+            os.chdir("D:/P3OutData/Meged/group_{}/size".format(group))
+            cv2.imwrite("size"+str(i+1)+".png",annotatedImage)
+            cv2.imwrite("OG"+str(i+1)+".png",boundingBoxImage)
 
 
 if __name__ == "__main__":
+    
     startTime = time.time()
     #IsolatingFish2.isolate()
     #images = glob.glob(r"D:\P3OutData\Meged\group_4T/*Final.png")
     groups = [10, 14, 20, 21, 22]
     for group in groups:
         images = glob.glob("C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3/group_{}/rs/rgb/*.png".format(group))
-        for i, fileName in enumerate(images):
-            if i > 0:
-                imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
-                image = cv2.imread(fileName)
-                imageThreshold = IsolatingFish2.isolate(fileName, i+1, group)
-                fishLenghts, fishOrientations, annotatedImage, boundingBoxImage = findSize(imageThreshold, image)
-                #annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
-                #imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
-                print(fileName)
-                #showImage([imageS, annotatedImageS])
-                if not os.path.exists("D:/P3OutData/Meged/group_{}/size".format(group)):
-                    os.makedirs("D:/P3OutData/Meged/group_{}/size".format(group))
-                os.chdir("D:/P3OutData/Meged/group_{}/size".format(group))
-                cv2.imwrite("size"+str(i+1)+".png",annotatedImage)
-                cv2.imwrite("OG"+str(i+1)+".png",boundingBoxImage)
+        numberOfThreads = 12 # OBS!!!!! chose the amoung ti threds to use
+        process = []
+        indexJump = int(math.modf(66/numberOfThreads)[1]+1)
+        for i in range(numberOfThreads):
+            if i == 0:
+                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump],1,group)))
+            elif i == numberOfThreads-1:
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:67],i*indexJump,group)))
+            else:
+                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump:(i+1)*indexJump],i*indexJump,group)))
+        
+        for element in process:
+            element.start()
+
+        for element in process:
+            element.join()
+
     print("TIME:", str(startTime-time.time()))
