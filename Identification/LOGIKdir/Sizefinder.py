@@ -223,7 +223,7 @@ def findSize(image):
         fishLenght.append(totalLenght)
 
         # put angles on the lines to show.
-        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        """cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
         cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     invertedColors[i], 1, cv2.LINE_AA)
@@ -231,7 +231,7 @@ def findSize(image):
         cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
         cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
+                    invertedColors[i], 1, cv2.LINE_AA)"""
 
         fishOrientation.append(angles)
         averagePoints.append(averagePoint)
@@ -255,9 +255,8 @@ if __name__ == "__main__":
         # imageThreshold = IsolatingFish.isolateFish(image)
         fishLenghts, fishOrientations, averagePoints, contours, annotatedImage = findSize(image)
         cv2.resize(annotatedImage, (960, 960))
-        #imageList.append(annotatedImage)
-        imageList.append(contours)
-        browseImages(imageList[i])
+        imageList.append(annotatedImage)
+        #imageList.append(contours)
         """cv2.imwrite(
             "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Comparison/" + name + "Program.png",
             annotatedImage)"""
