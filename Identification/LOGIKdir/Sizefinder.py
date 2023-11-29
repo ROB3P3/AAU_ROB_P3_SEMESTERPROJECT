@@ -51,46 +51,42 @@ def blobProperties(contours):
     # Goes through every blob
     for contour in contours:
         averagePoint = []
+        add = fishID
 
-        # Determines the area of the blob in order to avoid processing those too small to be fish
-        area = cv2.contourArea(contour)
-        if area > 5000:
-            add = fishID
+        properties.append(add)
 
-            properties.append(add)
+        # Get all pixel positions in contour to calculate average point
+        contourMask = np.zeros((1080, 1080), np.uint8)
+        extractedContours = cv2.drawContours(contourMask, [contour], -1, 255, -1)
+        separateContours.append(extractedContours)
+        yPixelValues, xPixelValues = np.nonzero(extractedContours)
+        # combine the x and y values into a list of tuples
+        pixelValues = list(zip(xPixelValues, yPixelValues))
 
-            # Get all pixel positions in contour to calculate average point
-            extracted = np.zeros((1080, 1080), np.uint8)
-            extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            separateContours.append(extracted)
-            yPixelValues, xPixelValues = np.nonzero(extracted)
-            # combine the x and y values into a list of tuples
-            pixelValues = list(zip(xPixelValues, yPixelValues))
+        # Calculate the average x and y values to get the average point in the blob
+        averagePointX = round(sum(xPixelValues) / len(xPixelValues))
+        averagePointY = round(sum(yPixelValues) / len(yPixelValues))
+        averagePoint.append((averagePointX, averagePointY))
 
-            # Calculate the average x and y values to get the average point in the blob
-            averagePointX = round(sum(xPixelValues) / len(xPixelValues))
-            averagePointY = round(sum(yPixelValues) / len(yPixelValues))
-            averagePoint.append((averagePointX, averagePointY))
+        # Find extreme points in contour. If multiple points have the same value, the middle point is used.
+        extremeRightIndex = np.where(xPixelValues == np.amax(xPixelValues))[0]
+        extremeRightIndex = extremeRightIndex[len(extremeRightIndex) // 2]
+        extremeBottomIndex = np.where(yPixelValues == np.amax(yPixelValues))[0]
+        extremeBottomIndex = extremeBottomIndex[len(extremeBottomIndex) // 2]
+        extremeLeftIndex = np.where(xPixelValues == np.amin(xPixelValues))[0]
+        extremeLeftIndex = extremeLeftIndex[len(extremeLeftIndex) // 2]
+        extremeTopIndex = np.where(yPixelValues == np.amin(yPixelValues))[0]
+        extremeTopIndex = extremeTopIndex[len(extremeTopIndex) // 2]
 
-            # Find extreme points in contour. If multiple points have the same value, the middle point is used.
-            extremeRightIndex = np.where(xPixelValues == np.amax(xPixelValues))[0]
-            extremeRightIndex = extremeRightIndex[len(extremeRightIndex) // 2]
-            extremeBottomIndex = np.where(yPixelValues == np.amax(yPixelValues))[0]
-            extremeBottomIndex = extremeBottomIndex[len(extremeBottomIndex) // 2]
-            extremeLeftIndex = np.where(xPixelValues == np.amin(xPixelValues))[0]
-            extremeLeftIndex = extremeLeftIndex[len(extremeLeftIndex) // 2]
-            extremeTopIndex = np.where(yPixelValues == np.amin(yPixelValues))[0]
-            extremeTopIndex = extremeTopIndex[len(extremeTopIndex) // 2]
+        # take the first of the index for the extreme points to get the average points.
+        extremeRight = (xPixelValues[extremeRightIndex], yPixelValues[extremeRightIndex])
+        extremeBottom = (xPixelValues[extremeBottomIndex], yPixelValues[extremeBottomIndex])
+        extremeLeft = (xPixelValues[extremeLeftIndex], yPixelValues[extremeLeftIndex])
+        extremeTop = (xPixelValues[extremeTopIndex], yPixelValues[extremeTopIndex])
 
-            # take the first of the index for the extreme points to get the average points.
-            extremeRight = (xPixelValues[extremeRightIndex], yPixelValues[extremeRightIndex])
-            extremeBottom = (xPixelValues[extremeBottomIndex], yPixelValues[extremeBottomIndex])
-            extremeLeft = (xPixelValues[extremeLeftIndex], yPixelValues[extremeLeftIndex])
-            extremeTop = (xPixelValues[extremeTopIndex], yPixelValues[extremeTopIndex])
+        positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
 
-            positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
-
-            fishID += 1
+        fishID += 1
 
     return properties, positions, separateContours
 
@@ -116,18 +112,21 @@ def findSize(image):
         invertedColors.append((255 - colours[i][0], 255 - colours[i][1], 255 - colours[i][2]))
 
     # Find contours (blobs) of binary image
-    contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # idfk hvorfor det her sker, måske pga. det er binær.
-    contours = contours[0] if len(contours) == 2 else contours[1]
-
-    sortedContours = sorted(contours, key=cv2.contourArea, reverse=True)
+    contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    # remove all contours whose area is smaller than 5000 pixels
+    sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
+    areaSortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
+    contourDict = {}
+    contourDict2 = {}
+    for i, contour in enumerate(areaSortedContours):
+        contourDict[i+1] = sortedContours.index(areaSortedContours[i])+1
+    print("Contour dictionary: ", contourDict)
+    print("Contour dictionary 2: ", contourDict2)
 
     blobsData, positions, separateContours = blobProperties(sortedContours)
 
     imagePlot = image.copy()
     imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
-    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     for i, fishID in enumerate(blobsData):
 
         averagePoint = positions[i][4]
@@ -137,12 +136,12 @@ def findSize(image):
         maximumPointY = positions[i][3]
         pointsMinMaxXY = [mininumPointX, maximumPointX, mininumPointY, maximumPointY]
 
-        cv2.drawContours(imagePlot, [sortedContours[i]], -1, (255, 255, 255), -1)
+        # Recolors the current blob to differentiate between blobs
+        cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)
 
         lineColor = singleRGBcolor(round(255 / 2))
 
-        print("Drawing average point: ", averagePoint)
-
+        # Draw a circle at the average point
         cv2.circle(imagePlot, averagePoint, 5, (255, 0, 0), -1)
 
         # Calculate distance from average point to extremepoints
@@ -157,15 +156,12 @@ def findSize(image):
                 if lenght == lenght2 and j != l:
                     lenghts[j] += 0.0001
 
-
-
         # Determine the 2 most points furthest from the average point
         # print("Lenghts: ", lenghts, sorted(lenghts))
         extremePoint1Index = lenghts.index(sorted(lenghts, reverse=True)[0])
         extremePoint1 = pointsMinMaxXY[extremePoint1Index]
         extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
         extremePoint2 = pointsMinMaxXY[extremePoint2Index]
-
 
         # Calculate angle between from averagfrom the average point.
         # Find orientation of fish head and tail (cannot determine which is which).
@@ -179,16 +175,12 @@ def findSize(image):
         # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
         # then use the extreme point which is third furthest away from the average point as extreme point 2.
         if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
-            print("Sorted lists")
-            print(sorted(lenghts, reverse=True))
             lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
-            print(sorted(lenghts, reverse=True))
             extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
             extremePoint2 = pointsMinMaxXY[extremePoint2Index]
-            print("Extreme point 2: ", extremePoint2, "Index: ", extremePoint2Index)
+
             angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
                                  (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
-
 
         # calculate total pixel lenght of fish.
         totalLenght = float(sum(sorted(lenghts)[2:]))
@@ -205,20 +197,21 @@ def findSize(image):
         # convertedLenght = float((totalLenght * 0.4) / 10)
         convertedLenght = round(totalLenght)
 
-        print("Totallenght: ", totalLenght, "Converted lenght: ", convertedLenght)
+        print("Totallenght for blob {}: ".format(i+1), totalLenght, "Converted lenght: ", convertedLenght)
 
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (255, 255, 255), 1, cv2.LINE_AA)
-
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (255, 255, 255), 2, cv2.LINE_AA)
 
         # Label blobs
-        fishText = "Fish" + str(fishID)
-        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
+        fishText = "Fish{}".format(fishID)
+        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    invertedColors[i], 2, cv2.LINE_AA)
 
         fishLenght.append(totalLenght)
 
@@ -242,11 +235,13 @@ def findSize(image):
 
 
 if __name__ == "__main__":
-    images = glob.glob(r"C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Org/*.png")
+    images = glob.glob(r"C:/Users/klump/OneDrive/Billeder/Fishtestdata/Badly drawn/Org/*.png")
     imageList = []
     print(images)
-    for i, fileName in enumerate(images):
+    for h, fileName in enumerate(images):
+        print(h)
         # Get png name and remove png ending
+        print(fileName)
         name = fileName.rsplit('\\', 1)[-1]
         name = name[:-4]
         print(name)
@@ -254,11 +249,11 @@ if __name__ == "__main__":
         image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
         # imageThreshold = IsolatingFish.isolateFish(image)
         fishLenghts, fishOrientations, averagePoints, contours, annotatedImage = findSize(image)
-        cv2.resize(annotatedImage, (960, 960))
+        # annotatedImage = cv2.resize(annotatedImage, (960, 960))
         imageList.append(annotatedImage)
-        #imageList.append(contours)
-        """cv2.imwrite(
-            "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Comparison/" + name + "Program.png",
-            annotatedImage)"""
+        # imageList.append(contours)
+        cv2.imwrite(
+            "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Badly drawn/Comparison/" + name + "Program.png",
+            annotatedImage)
 
-    browseImages(imageList)
+    # browseImages(imageList)
