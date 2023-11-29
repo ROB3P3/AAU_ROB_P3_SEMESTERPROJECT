@@ -2,11 +2,6 @@ import glob
 import cv2
 import numpy as np
 import math
-import IsolatingFish2
-import os
-import time
-import multiprocessing as mp
-from fractions import Fraction
 
 
 def showImage(images):
@@ -44,17 +39,19 @@ def singleRGBcolor(color):
     return [color, color, color]
 
 
-def blobProperties(contours, y ,x):
+def blobProperties(contours):
     """Function which returns a list of the properties of all blobs in an image.
     These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
     It also returns a list containing the positions of the pixels with the minumum and maximum X- and Y-values."""
     properties = []
     positions = []
-    separateContours = []
     fishID = 1
 
     # Goes through every blob
     for contour in contours:
+
+        pixelPositionX = []
+        pixelPositionY = []
         averagePoint = []
 
         # Determines the area of the blob in order to avoid processing those too small to be fish
@@ -65,9 +62,8 @@ def blobProperties(contours, y ,x):
             properties.append(add)
 
             # Get all pixel positions in contour to calculate average point
-            extracted = np.zeros((y, x), np.uint8)
+            extracted = np.zeros((1080, 1080), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            separateContours.append(extracted)
             yPixelValues, xPixelValues = np.nonzero(extracted)
             # combine the x and y values into a list of tuples
             pixelValues = list(zip(xPixelValues, yPixelValues))
@@ -93,14 +89,27 @@ def blobProperties(contours, y ,x):
             extremeLeft = (xPixelValues[extremeLeftIndex], yPixelValues[extremeLeftIndex])
             extremeTop = (xPixelValues[extremeTopIndex], yPixelValues[extremeTopIndex])
 
+            print("Extreme left: ", extremeLeft)
+            print("Extreme right: ", extremeRight)
+            print("Extreme top: ", extremeTop)
+            print("Extreme bottom: ", extremeBottom)
+            print("Average point: ", averagePoint[0])
+            # showImage([extracted])
+
+            """extremeLeft = tuple(contour[contour[:, :, 0].argmin()][0])
+            extremeRight = tuple(contour[contour[:, :, 0].argmax()][0])
+            extremeTop = tuple(contour[contour[:, :, 1].argmin()][0])
+            extremeBottom = tuple(contour[contour[:, :, 1].argmax()][0])"""
+
             positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
+            print("Positions: ", positions[fishID - 1])
 
             fishID += 1
 
-    return properties, positions, separateContours
+    return properties, positions
 
 
-def findSize(image, originalImage):
+def findSize(image):
     """Function to find the area and lenght of a fish(blob). image -> binary"""
 
     fishLenght = []
@@ -128,9 +137,7 @@ def findSize(image, originalImage):
 
     sortedContours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-    y = image.shape[0]
-    x = image.shape[1]
-    blobsData, positions, separateContours = blobProperties(sortedContours, y, x)
+    blobsData, positions = blobProperties(sortedContours)
 
     imagePlot = image.copy()
     imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
@@ -143,16 +150,16 @@ def findSize(image, originalImage):
         mininumPointY = positions[i][2]
         maximumPointY = positions[i][3]
         pointsMinMaxXY = [mininumPointX, maximumPointX, mininumPointY, maximumPointY]
+        print("Points min max: ", pointsMinMaxXY)
 
-        originalImage = cv2.rectangle(originalImage,[mininumPointX[0],mininumPointY[1]], [maximumPointX[0],maximumPointY[1]], colours[i], 2)
-
-        cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
+        cv2.drawContours(imagePlot, [sortedContours[i]], -1, (255, 255, 255), -1)  # , colours[i], thickness=cv2.FILLED)
 
         lineColor = singleRGBcolor(round(255 / 2))
 
         print("Drawing average point: ", averagePoint)
 
         cv2.circle(imagePlot, averagePoint, 5, (255, 0, 0), -1)
+        cv2.circle(image, averagePoint, 5, (255, 0, 0), -1)
 
         # Calculate distance from average point to extremepoints
         lenght2MinX = math.sqrt((mininumPointX[0] - averagePoint[0]) ** 2 + (mininumPointX[1] - averagePoint[1]) ** 2)
@@ -169,12 +176,13 @@ def findSize(image, originalImage):
 
 
         # Determine the 2 most points furthest from the average point
-        # print("Lenghts: ", lenghts, sorted(lenghts))
+        print("Lenghts: ", lenghts, sorted(lenghts))
         extremePoint1Index = lenghts.index(sorted(lenghts, reverse=True)[0])
         extremePoint1 = pointsMinMaxXY[extremePoint1Index]
+        print("Extreme point 1: ", extremePoint1, "Index: ", extremePoint1Index)
         extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
         extremePoint2 = pointsMinMaxXY[extremePoint2Index]
-
+        print("Extreme point 2: ", extremePoint2, "Index: ", extremePoint2Index)
 
         # Calculate angle between from averagfrom the average point.
         # Find orientation of fish head and tail (cannot determine which is which).
@@ -184,10 +192,11 @@ def findSize(image, originalImage):
                              (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
         angleBetweenExtremes = angle1 - angle2
         angles = (angle1, angle2)
+        print("Angle between extremes: ", angleBetweenExtremes)
 
         # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
         # then use the extreme point which is third furthest away from the average point as extreme point 2.
-        if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
+        if -45 < angleBetweenExtremes < 45:
             print("Sorted lists")
             print(sorted(lenghts, reverse=True))
             lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
@@ -197,6 +206,7 @@ def findSize(image, originalImage):
             print("Extreme point 2: ", extremePoint2, "Index: ", extremePoint2Index)
             angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
                                  (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
+            angleBetweenExtremes = angle1 - angle2
 
 
         # calculate total pixel lenght of fish.
@@ -216,23 +226,31 @@ def findSize(image, originalImage):
 
         print("Totallenght: ", totalLenght, "Converted lenght: ", convertedLenght)
 
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)), averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        cv2.putText(imagePlot, str(round(convertedLenght, 1)), averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (255, 255, 255), 1, cv2.LINE_AA)
 
+        # possible use though unsure
+        # Using circles for lenght estimation
+        """cv2.putText(imagePlot, str(round(convertedLenghtCircle, 1)) + "CM C", (averagePoint[0], averagePoint[1] - 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 0), 8, cv2.LINE_AA)
+        cv2.putText(imagePlot, str(round(convertedLenghtCircle, 1)) + "CM C", (averagePoint[0], averagePoint[1] - 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (255, 255, 255), 2, cv2.LINE_AA)"""
 
         # Label blobs
         fishText = "Fish" + str(fishID)
-        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        """cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
+        cv2.putText(imagePlot, fishText, centre, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    invertedColors[i], 1, cv2.LINE_AA)"""
 
         fishLenght.append(totalLenght)
 
         # put angles on the lines to show.
-        cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        """cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
         cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     invertedColors[i], 1, cv2.LINE_AA)
@@ -240,88 +258,30 @@ def findSize(image, originalImage):
         cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (0, 0, 0), 4, cv2.LINE_AA)
         cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    invertedColors[i], 1, cv2.LINE_AA)
+                    invertedColors[i], 1, cv2.LINE_AA)"""
 
         fishOrientation.append(angles)
         averagePoints.append(averagePoint)
 
     # print(fishLenght)
 
-    return fishLenght, fishOrientation, imagePlot, originalImage, averagePoints, separateContours
-
-def pathingSetup(group, rootPath):
-    if not os.path.exists("{}/group_{}/Size".format(rootPath, group)):
-        os.makedirs("{}/group_{}/Size".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/THData".format(rootPath, group)):
-        os.makedirs("{}/group_{}/THData".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/FinalTH".format(rootPath, group)):
-        os.makedirs("{}/group_{}/FinalTH".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/DepthTH".format(rootPath, group)):
-        os.makedirs("{}/group_{}/DepthTH".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/CP".format(rootPath, group)):
-        os.makedirs("{}/group_{}/CP".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/Edge".format(rootPath, group)):
-        os.makedirs("{}/group_{}/Edge".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/ColourTH".format(rootPath, group)):
-        os.makedirs("{}/group_{}/ColourTH".format(rootPath, group))
-    if not os.path.exists("{}/group_{}/THSum".format(rootPath, group)):
-        os.makedirs("{}/group_{}/THSum".format(rootPath, group))
-
-
-
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath):
-    for i, fileName in enumerate(indexFileNameList):
-            i += startingNumber
-            imageThreshold = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
-            image = cv2.imread(fileName)
-            imageThreshold = IsolatingFish2.isolate(fileName, i+1, group, outputDataRootPath)
-            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage, averagePoints, separateContours = findSize(imageThreshold, image)
-            #annotatedImageS = cv2.resize(annotatedImage, (0, 0), fx = 0.5, fy = 0.5)
-            #imageS = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
-            print(fileName)
-            #showImage([imageS, annotatedImageS])
-            
-            os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
-            cv2.imwrite("size"+str(i+1)+".png",annotatedImage)
-            cv2.imwrite("OG"+str(i+1)+".png",boundingBoxImage)
+    return fishLenght, fishOrientation, averagePoints, imagePlot, image
 
 
 if __name__ == "__main__":
-    startTime = time.time()
-    groups = [10]#[10, 14, 20, 21, 22] # The groups the program is goinf through
+    images = glob.glob(r"C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Org/*.png")
+    imageList = []
+    print(images)
+    for i, fileName in enumerate(images):
+        # Get png name and remove png ending
+        name = fileName.rsplit('\\', 1)[-1]
+        name = name[:-4]
+        print(name)
 
-    for group in groups:
-        pathInputRoot = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3"
-        images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group)) # OBS!!!!! Change to directory to Data set png's
-        outputDataRootPath = "D:/P3OutData/Merged" # where you want the program to create it's data folders
-        pathingSetup(group, outputDataRootPath)
-        numberOfThreads = 12 # OBS!!!!! chose the amount of threds to use
-        picturesPerGroup = 66
-        
-        process = []
-        indexJump = int(math.modf(66/numberOfThreads)[1])
-        optimizeFraction = Fraction(math.modf(66/numberOfThreads)[0]).limit_denominator(1000000)
-        Offset = (numberOfThreads/optimizeFraction.denominator)*optimizeFraction.numerator
-        indexOffsetEnd = 0
-        indexOffsetStart = 0
-        for i in range(numberOfThreads):
-            if Offset != 0:
-                indexOffsetEnd +=1
-                Offset -= 1
-            if i == 0:
-                if Offset != 0:
-                    indexOffsetEnd +=1
-                    Offset -= 1
-                process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath)))
-            elif i == numberOfThreads-1:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:67],i*indexJump+indexOffsetStart,group, outputDataRootPath)))
-            else:
-                process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath)))
-        
-        for element in process:
-            element.start()
+        image = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+        # imageThreshold = IsolatingFish.isolateFish(image)
+        fishLenghts, fishOrientations, averagePoints, annotatedImage, averageImage = findSize(image)
+        cv2.imwrite(
+            "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Shape tool/Annontated/" + name + "average.png",
+            averageImage)
 
-        for element in process:
-            element.join()
-
-    print("TIME:", str(startTime-time.time()))
