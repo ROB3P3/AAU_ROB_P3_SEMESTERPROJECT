@@ -44,7 +44,7 @@ def singleRGBcolor(color):
     return [color, color, color]
 
 
-def blobProperties(contours):
+def blobProperties(contours, y ,x):
     """Function which returns a list of the properties of all blobs in an image.
     These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
     It also returns a list containing the positions of the pixels with the minumum and maximum X- and Y-values."""
@@ -65,7 +65,7 @@ def blobProperties(contours):
             properties.append(add)
 
             # Get all pixel positions in contour to calculate average point
-            extracted = np.zeros((1080, 1080), np.uint8)
+            extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
             separateContours.append(extracted)
             yPixelValues, xPixelValues = np.nonzero(extracted)
@@ -128,7 +128,9 @@ def findSize(image, originalImage):
 
     sortedContours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-    blobsData, positions, separateContours = blobProperties(sortedContours)
+    y = image.shape[0]
+    x = image.shape[1]
+    blobsData, positions, separateContours = blobProperties(sortedContours, y, x)
 
     imagePlot = image.copy()
     imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
@@ -289,11 +291,11 @@ if __name__ == "__main__":
     groups = [10]#[10, 14, 20, 21, 22] # The groups the program is goinf through
 
     for group in groups:
-        pathInputRoot = "C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3"
+        pathInputRoot = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3"
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group)) # OBS!!!!! Change to directory to Data set png's
-        outputDataRootPath = "G:/P3OutData/Merged" # where you want the program to create it's data folders
+        outputDataRootPath = "D:/P3OutData/Merged" # where you want the program to create it's data folders
         pathingSetup(group, outputDataRootPath)
-        numberOfThreads = 16 # OBS!!!!! chose the amount of threds to use
+        numberOfThreads = 12 # OBS!!!!! chose the amount of threds to use
         picturesPerGroup = 66
         
         process = []
