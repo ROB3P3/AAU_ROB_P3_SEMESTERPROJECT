@@ -8,6 +8,9 @@ import time
 import multiprocessing as mp
 from fractions import Fraction
 
+class SizeFinder:
+    def __init__(self) -> None:
+        print("Sizefinder initialized:")
 
 def showImage(images):
     """Function to show an array of images until 0 is pressed"""
