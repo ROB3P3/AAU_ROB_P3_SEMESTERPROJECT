@@ -6,12 +6,16 @@ from tkinter.ttk import Progressbar
 from tkinter.ttk import Label as ttkLabel
 from mysql.connector.errors import Error, Warning
 from mysql.connector import errorcode
-import Identification.DATAdir.DatabaseHandler as DatabaseHandler
+#from Identification.DATAdir import DatabaseHandler as DatabaseHandler
+import DATAdir.DatabaseHandler as DatabaseHandler
 import os
+import LOGIKdir.Logik as Logik
+from multiprocessing import freeze_support
 
 
 class Main(Tk):
     def __init__(self):
+        freeze_support()
         Tk.__init__(self)
         # the container is where we'll stack the frames on top of each other, then select the one we want visible
         # to be raised above the others
@@ -96,7 +100,7 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        self.IPField.insert(tk.END, "172.26.51.10")
+        self.IPField.insert(tk.END, "192.168.1.191")
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
         self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
@@ -113,7 +117,7 @@ class StartPage(Frame):
                                textvariable=self.pathValue)
         self.pathField.place(relx=0.5, rely=0.40, anchor=CENTER)
         # insert test path
-        self.pathField.insert(tk.END, r"C:\FishProject")
+        self.pathField.insert(tk.END, r"C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3")
         self.pathButton = Button(self, text="Check", command=lambda: self.checkPath(), font=("Arial", "20"), bg="black",
                                  fg="white")
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
@@ -247,7 +251,7 @@ class StartPage(Frame):
     def checkForFiles(self):
         """Check if each group folder contains the necessary files."""
         for group in self.groupFolders:
-            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/*.png".format(group))
+            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/rs/*.png".format(group))
             fishFileValidation = glob.glob(self.path + r"/{}/rs/rgb/*.png".format(group))
             outputPathValidation = os.path.isdir(self.path + r"/{}/output/")
             depthFileValidation = glob.glob(self.path + r"/{}/rs/depth/*.png".format(group))
@@ -345,6 +349,7 @@ class PageOne(Frame):
         Frame.__init__(self, parent)
         self.controller = controller
         self.config(bg="royalblue2")
+        self.parent = parent
 
         self.backButton = Button(self, text="Back", command=lambda: self.controller.show_frame("StartPage"),
                                  font=("Arial", "25"), bg="black", fg="white")
@@ -374,10 +379,20 @@ class PageOne(Frame):
             self.groupList.insert(END, str(group))
             # self.groupList.itemconfig(str(group), bg="lime")
 
-    def start(self):
+    def start(self): ###################################################################################### Starts the ID process
         """Start identification process"""
         print("Starting identification")
+        self.selectedGroups = []
+        for  i in self.groupList.curselection():
+            self.selectedGroups.append(int(self.groupList.get(i).split("_")[1]))
+        #list = (self.groupList.get(group) for group in self.groupList.curselection())
+        print(self.selectedGroups)
+        #print((self.groupList.curselection()).split("_"))
+        print(self.controller.frames["StartPage"].path)
+        print(self.controller.frames["StartPage"].path)
+        
         self.controller.show_frame("PageTwo")
+        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups)
 
 
 class PageTwo(Frame):
@@ -417,7 +432,7 @@ class PageTwo(Frame):
         self.Database = self.controller.frames["StartPage"].Database
         self.groupSelection = self.controller.frames["PageOne"].groupList.curselection()
         self.groupFolders = [self.controller.frames["PageOne"].groupList.get(group) for group in self.groupSelection]
-        print(self.groupFolders)
+        print(self.groupFolders, "WTF")
         # disable all buttons until identification is done
         self.startButton.config(state=DISABLED)
         self.backButton.config(state=DISABLED)
@@ -462,5 +477,3 @@ class PageTwo(Frame):
         self.backButton.config(state=NORMAL)
 
 
-app = Main()
-app.mainloop()

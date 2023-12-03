@@ -1,11 +1,7 @@
-import math
-from fractions import Fraction
+import multiprocessing
 import os
+import psutil
 
-picturesPerGroup = 66
-
-imageDataList = [x for x in range(picturesPerGroup)]
-
-print(imageDataList)
-
-print(os.environ.get('USERNAME'))
+prosess = psutil.process_iter()
+for element in prosess:
+    print(element.name())
