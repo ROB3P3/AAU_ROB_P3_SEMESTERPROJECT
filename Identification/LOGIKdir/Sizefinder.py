@@ -2,7 +2,8 @@ import glob
 import cv2
 import numpy as np
 import math
-import IsolatingFish2
+#import IsolatingFish2
+from CameraCalibration import WarpPerspective
 import os
 import time
 import multiprocessing as mp
@@ -44,7 +45,7 @@ def singleRGBcolor(color):
     return [color, color, color]
 
 
-def blobProperties(contours, y, x):
+def blobProperties(contours, y, x, image, imageVlobs):
     """Function which returns a list of the properties of all blobs in an image.
     These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
     It also returns a list containing the positions of the pixels with the minumum and maximum X- and Y-values."""
@@ -52,49 +53,141 @@ def blobProperties(contours, y, x):
     positions = []
     separateContours = []
     fishID = 1
+    imageVlobs = cv2.cvtColor(imageVlobs, cv2.COLOR_GRAY2RGB)
+
+
 
     # Goes through every blob
     for contour in contours:
         averagePoint = []
 
-        # Determines the area of the blob in order to avoid processing those too small to be fish
-        area = cv2.contourArea(contour)
-        if area > 5000:
-            add = fishID
+        add = fishID
 
-            properties.append(add)
+        properties.append(add)
 
-            # Get all pixel positions in contour to calculate average point
-            extracted = np.zeros((y, x), np.uint8)
-            extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            separateContours.append(extracted)
-            yPixelValues, xPixelValues = np.nonzero(extracted)
+        # Get all pixel positions in contour to calculate average point
+        extracted = np.zeros((y, x), np.uint8)
+        extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
+        blobs = extracted.copy()
+        blobs = cv2.cvtColor(blobs, cv2.COLOR_GRAY2RGB)
 
-            # Calculate the average x and y values to get the average point in the blob
-            averagePointX = round(sum(xPixelValues) / len(xPixelValues))
-            averagePointY = round(sum(yPixelValues) / len(yPixelValues))
-            averagePoint.append((averagePointX, averagePointY))
+        boundedContours = extracted.copy()
+        separateContours.append(extracted)
 
-            # Find extreme points in contour. If multiple points have the same value, the middle point is used.
-            extremeRightIndex = np.where(xPixelValues == np.amax(xPixelValues))[0]
-            extremeRightIndex = extremeRightIndex[len(extremeRightIndex) // 2]
-            extremeBottomIndex = np.where(yPixelValues == np.amax(yPixelValues))[0]
-            extremeBottomIndex = extremeBottomIndex[len(extremeBottomIndex) // 2]
-            extremeLeftIndex = np.where(xPixelValues == np.amin(xPixelValues))[0]
-            extremeLeftIndex = extremeLeftIndex[len(extremeLeftIndex) // 2]
-            extremeTopIndex = np.where(yPixelValues == np.amin(yPixelValues))[0]
-            extremeTopIndex = extremeTopIndex[len(extremeTopIndex) // 2]
+        #showImage([extracted])
+        yPixelValues, xPixelValues = np.nonzero(extracted)
+        hull = cv2.convexHull(contour, returnPoints=False)
+        hullPoints = cv2.convexHull(contour, returnPoints=True)
+        for i in range(len(hullPoints)):
+            cv2.circle(image, tuple(hullPoints[i][0]), 4, [135, 0, 135], -1)
+            cv2.circle(imageVlobs, tuple(hullPoints[i][0]), 4, [135, 0, 135], -1)
 
-            # take the first of the index for the extreme points to get the average points.
-            extremeRight = (xPixelValues[extremeRightIndex], yPixelValues[extremeRightIndex])
-            extremeBottom = (xPixelValues[extremeBottomIndex], yPixelValues[extremeBottomIndex])
-            extremeLeft = (xPixelValues[extremeLeftIndex], yPixelValues[extremeLeftIndex])
-            extremeTop = (xPixelValues[extremeTopIndex], yPixelValues[extremeTopIndex])
+        #showImage([imageVlobs])
+        #hullContour = cv2.drawContours(imageVlobs, [hull], -1, [0,255,0], 3)
+        defects = cv2.convexityDefects(contour, hull)
+        for i in range(defects.shape[0]):
+            blackPixels = 0
+            s, e, f, d = defects[i, 0]
+            start = tuple(contour[s][0])
+            end = tuple(contour[e][0])
+            far = tuple(contour[f][0])
+            triangle = np.array([start, end, far])
 
-            positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
+            extractedTriangle = np.zeros((y, x), np.uint8)
+            extractedTriangle = cv2.drawContours(extractedTriangle, [triangle], -1, 255, -1)
+            yPixelValuesTriangle, xPixelValuesTriangle = np.nonzero(extractedTriangle)
+            # go through every pixel and count the amount of black pixels
+            for j in range(len(xPixelValuesTriangle)):
+                if all(blobs[yPixelValuesTriangle[j]][xPixelValuesTriangle[j]]) == 0:
+                    #print("black pixel")
+                    blackPixels += 1
 
-            fishID += 1
+            print("Percentage of black pixels: ", blackPixels/len(xPixelValuesTriangle))
 
+
+
+            lenght = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
+
+            angle1 = (math.atan2((start[1] - far[1]),
+                                 (start[0] - far[0]))) * 180 / math.pi
+            angle2 = (math.atan2((end[1] - far[1]),
+                                 (end[0] - far[0]))) * 180 / math.pi
+            angleBetweenExtremes = angle1 - angle2
+
+
+            #print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
+            cv2.circle(image, far, 5, [0, 0, 255], -1)
+            cv2.circle(imageVlobs, far, 5, [0, 0, 255], -1)
+
+            #if lenght > 150 and (-90 > angleBetweenExtremes > 90 or -270 < angleBetweenExtremes < -90 or 270 > angleBetweenExtremes > 90):
+
+            #if d > 4000 and lenght > 150 and (-90 > angleBetweenExtremes > 90 or -270 < angleBetweenExtremes < -90 or 270 > angleBetweenExtremes > 90):
+            if blackPixels/len(xPixelValuesTriangle) > 0.75 and lenght > 100:
+                print("d", d, angleBetweenExtremes)
+                #print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
+                cv2.line(image, start, far, [0, 255, 0], 2)
+                cv2.line(imageVlobs, start, far, [0, 255, 0], 2)
+
+                cv2.line(image, end, far, [0, 255, 0], 2)
+                cv2.line(imageVlobs, end, far, [0, 255, 0], 2)
+
+
+
+                cv2.putText(imageVlobs, str(round(d)), far, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imageVlobs, str(round(d)), far, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (255, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(imageVlobs, str(round(angleBetweenExtremes)), (far[0],far[1]+17), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imageVlobs, str(round(angleBetweenExtremes)), (far[0],far[1]+17), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (135, 135, 0), 1, cv2.LINE_AA)
+
+                cv2.line(boundedContours, start, far, 255, 2)
+
+
+            else:
+                cv2.line(image, start, end, [0, 255, 0], 2)
+                cv2.line(imageVlobs, start, end, [0, 255, 0], 2)
+                cv2.line(boundedContours, start, end, 255, 2)
+
+
+
+        #showImage([image, imageVlobs])
+
+        boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+        extractedBounded = np.zeros((y, x), np.uint8)
+        print(len(boundedContours[0]), len(contour))
+        extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
+        showImage([extractedBounded])
+
+
+
+        # Calculate the average x and y values to get the average point in the blob
+        averagePointX = round(sum(xPixelValues) / len(xPixelValues))
+        averagePointY = round(sum(yPixelValues) / len(yPixelValues))
+        averagePoint.append((averagePointX, averagePointY))
+
+        # Find extreme points in contour. If multiple points have the same value, the middle point is used.
+        extremeRightIndex = np.where(xPixelValues == np.amax(xPixelValues))[0]
+        extremeRightIndex = extremeRightIndex[len(extremeRightIndex) // 2]
+        extremeBottomIndex = np.where(yPixelValues == np.amax(yPixelValues))[0]
+        extremeBottomIndex = extremeBottomIndex[len(extremeBottomIndex) // 2]
+        extremeLeftIndex = np.where(xPixelValues == np.amin(xPixelValues))[0]
+        extremeLeftIndex = extremeLeftIndex[len(extremeLeftIndex) // 2]
+        extremeTopIndex = np.where(yPixelValues == np.amin(yPixelValues))[0]
+        extremeTopIndex = extremeTopIndex[len(extremeTopIndex) // 2]
+
+        # take the first of the index for the extreme points to get the average points.
+        extremeRight = (xPixelValues[extremeRightIndex], yPixelValues[extremeRightIndex])
+        extremeBottom = (xPixelValues[extremeBottomIndex], yPixelValues[extremeBottomIndex])
+        extremeLeft = (xPixelValues[extremeLeftIndex], yPixelValues[extremeLeftIndex])
+        extremeTop = (xPixelValues[extremeTopIndex], yPixelValues[extremeTopIndex])
+
+        positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
+
+        fishID += 1
+    showImage([image, imageVlobs])
     return properties, positions, separateContours
 
 
@@ -120,16 +213,16 @@ def findSize(image, originalImage):
         invertedColors.append((255 - colours[i][0], 255 - colours[i][1], 255 - colours[i][2]))
 
     # Find contours (blobs) of binary image
-    contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # idfk hvorfor det her sker, måske pga. det er binær.
-    contours = contours[0] if len(contours) == 2 else contours[1]
-
-    sortedContours = sorted(contours, key=cv2.contourArea, reverse=True)
+    contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    # remove all contours whose area is smaller than 5000 pixels
+    sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
+    sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
 
     y = image.shape[0]
     x = image.shape[1]
-    blobsData, positions, separateContours = blobProperties(sortedContours, y, x)
+    blankImage = np.zeros((y, x), np.uint8)
+    contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
+    blobsData, positions, separateContours = blobProperties(sortedContours, y, x, originalImage, contoursDrawn)
 
     imagePlot = image.copy()
     imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
@@ -186,13 +279,9 @@ def findSize(image, originalImage):
         # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
         # then use the extreme point which is third furthest away from the average point as extreme point 2.
         if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
-            print("Sorted lists")
-            print(sorted(lenghts, reverse=True))
             lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
-            print(sorted(lenghts, reverse=True))
             extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
             extremePoint2 = extremePointList[extremePoint2Index]
-            print("Extreme point 2: ", extremePoint2, "Index: ", extremePoint2Index)
             angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
                                  (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
 
@@ -210,8 +299,6 @@ def findSize(image, originalImage):
         # convert pixel lenght to centimeters.
         # convertedLenght = float((totalLenght * 0.4) / 10)
         convertedLenght = round(totalLenght)
-
-        print("Totallenght: ", totalLenght, "Converted lenght: ", convertedLenght)
 
         cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -284,47 +371,34 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath):
 
 
 if __name__ == "__main__":
-    startTime = time.time()
-    groups = [10]  # [10, 14, 20, 21, 22] # The groups the program is goinf through
+    imagesBlobs = glob.glob(r"C:/FishProject/Test/TestThresholds/*.png")
+    imagesOrg = glob.glob(r"C:/FishProject/Test/TestOrg/*.png")
+    imageList = []
+    print(imagesBlobs)
+    for h, fileName in enumerate(imagesBlobs):
+        if h == 3:
+            print(h)
+            # Get png name and remove png ending
+            print(fileName)
+            name = fileName.rsplit('\\', 1)[-1]
+            name = name[:-4]
+            print(name)
 
-    for group in groups:
-        pathInputRoot = "C:/Users/fhp89/OneDrive - Aalborg Universitet/autofish_rob3"
-        images = glob.glob(
-            "{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))  # OBS!!!!! Change to directory to Data set png's
-        outputDataRootPath = "D:/P3OutData/Merged"  # where you want the program to create it's data folders
-        pathingSetup(group, outputDataRootPath)
-        numberOfThreads = 12  # OBS!!!!! chose the amount of threds to use
-        picturesPerGroup = 66
+            imageOrg = cv2.imread(imagesOrg[h])
+            imageOrg, points = WarpPerspective(imageOrg)
+            #showImage([imageOrg])
 
-        process = []
-        indexJump = int(math.modf(66 / numberOfThreads)[1])
-        optimizeFraction = Fraction(math.modf(66 / numberOfThreads)[0]).limit_denominator(1000000)
-        Offset = (numberOfThreads / optimizeFraction.denominator) * optimizeFraction.numerator
-        indexOffsetEnd = 0
-        indexOffsetStart = 0
-        for i in range(numberOfThreads):
-            if Offset != 0:
-                indexOffsetEnd += 1
-                Offset -= 1
-            if i == 0:
-                if Offset != 0:
-                    indexOffsetEnd += 1
-                    Offset -= 1
-                process.append(mp.Process(target=taskHandeler,
-                                          args=(images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath)))
-            elif i == numberOfThreads - 1:
-                process.append(mp.Process(target=taskHandeler, args=(
-                images[i * indexJump + indexOffsetStart:67], i * indexJump + indexOffsetStart, group,
-                outputDataRootPath)))
-            else:
-                process.append(mp.Process(target=taskHandeler, args=(
-                images[i * indexJump + indexOffsetStart:(i + 1) * indexJump + indexOffsetEnd],
-                i * indexJump + indexOffsetStart, group, outputDataRootPath)))
+            imageBlob = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
+            imageBlob, points = WarpPerspective(imageBlob, points)
+            #showImage([imageBlob])
 
-        for element in process:
-            element.start()
+            # imageThreshold = IsolatingFish.isolateFish(image)
+            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage, averagePoints, separateContours, extremePoints = findSize(imageBlob, imageOrg)
+            annotatedImage = cv2.resize(annotatedImage, (960, 960))
+            imageList.append(annotatedImage)
+            # imageList.append(contours)
+            """cv2.imwrite(
+                "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Badly drawn/Comparison/" + name + "Program.png",
+                annotatedImage)"""
 
-        for element in process:
-            element.join()
-
-    print("TIME:", str(startTime - time.time()))
+    browseImages(imageList)
