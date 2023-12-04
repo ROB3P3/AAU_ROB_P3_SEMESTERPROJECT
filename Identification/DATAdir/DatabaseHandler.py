@@ -9,7 +9,7 @@ class Database():
         self.IPAddress = IPAddress
         self.port = port
         self.mysql = mysql.connector.connect(host=self.IPAddress, port=self.port, user="frederik", password="frederik",
-                                             database="Ehhhm")
+                                             database="fisk")
         self.curs = self.mysql.cursor(buffered=True)
 
 

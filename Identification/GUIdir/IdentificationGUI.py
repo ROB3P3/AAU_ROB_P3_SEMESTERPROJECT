@@ -100,7 +100,7 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        self.IPField.insert(tk.END, "192.168.1.191")
+        self.IPField.insert(tk.END, "127.0.0.1")
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
         self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
@@ -389,9 +389,8 @@ class PageOne(Frame):
         print(self.selectedGroups)
         #print((self.groupList.curselection()).split("_"))
         print(self.controller.frames["StartPage"].path)
-        print(self.controller.frames["StartPage"].path)
         
-        self.controller.show_frame("PageTwo")
+        #self.controller.show_frame("PageTwo")
         Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups)
 
 
@@ -456,20 +455,19 @@ class PageTwo(Frame):
 
 
 
-        """import time
         self.progressBarAllGroups['value'] = 0
         for group in self.groupFolders:
             print(group)
             self.progressBarAllGroupsLabel.config(text="Progress of {}".format(group))
             # self.progressBarAllGroupsLabel['text'] = self.update_progress_label(self.progressBarAllGroups)
-            self.progressBarAllGroups['value'] += 100 / len(self.groupFolders)
+            self.progressBarAllGroups['value'] += 100 / (len(self.groupFolders)+1)
             self.progressBarSeperateGroups['value'] = 0
-            for i in range(5):
-                print(i)
-                self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1))
-                self.progressBarSeperateGroups['value'] += 20
-                self.update_idletasks()
-            self.update_idletasks()"""
+            #while len(glob.glob("C:/P3OutData/Merged/group_{}/Edge/*.png".format(group))) < len(glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path,group))):
+            self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1)) #
+            self.progressBarSeperateGroups['value'] = (len(glob.glob("C:/P3OutData/Merged/{}/Edge/*.png".format(group))) / len(glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path,group))))* 100
+            self.update_idletasks()
+            print("Hello from task update")
+            self.update_idletasks()
         self.progressBarAllGroupsLabel.config(text="Done")
 
         # enable all buttons when identification is done

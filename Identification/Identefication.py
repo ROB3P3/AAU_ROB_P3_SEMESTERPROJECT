@@ -2,10 +2,10 @@ import time
 import glob
 
 from LOGIKdir import Logik
-from GUIdir import identificationGUI
+from GUIdir import IdentificationGUI
 
 
 if __name__ == "__main__":
     
-    app = identificationGUI.Main()
+    app = IdentificationGUI.Main()
     app.mainloop()
