@@ -11,7 +11,7 @@ class Cropper:
 
     def findEdges(self):
         self.imgGrey = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        self.imgEdges = cv2.Canny(self.imgGrey, 250, 400, apertureSize=3)
+        self.imgEdges = cvanny(self.imgGrey, 250, 400, apertureSize=3)
 
     def findVerticalLines(self):
         self.imgLines = self.img

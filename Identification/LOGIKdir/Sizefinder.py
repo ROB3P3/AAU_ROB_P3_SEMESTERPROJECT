@@ -115,13 +115,7 @@ def findSize(image):
     contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
     # remove all contours whose area is smaller than 5000 pixels
     sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
-    areaSortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
-    contourDict = {}
-    contourDict2 = {}
-    for i, contour in enumerate(areaSortedContours):
-        contourDict[i+1] = sortedContours.index(areaSortedContours[i])+1
-    print("Contour dictionary: ", contourDict)
-    print("Contour dictionary 2: ", contourDict2)
+    sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
 
     blobsData, positions, separateContours = blobProperties(sortedContours)
 
