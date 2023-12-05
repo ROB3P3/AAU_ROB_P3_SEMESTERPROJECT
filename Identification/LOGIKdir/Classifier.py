@@ -85,11 +85,12 @@ class Classifier:
         """Calculate the average HSV value of each fish by using the contours of the fish"""
         image = imageData.img
         fishContours = imageData.separateContours
+        
         fishAverageHSV = []
         for contour in fishContours:
             # Create an empty image with only the individual contour
             indContourImage = np.zeros(image.shape, dtype=np.uint8)
-            cv2.drawContours(indContourImage, [contour], -1, (255, 255, 255), -1)
+            cv2.drawContours(indContourImage, contour, -1, (255, 255, 255), -1)
             # Count every non-black pixel in the image
             yPixels, xPixels, zPixels = np.nonzero(indContourImage)
             

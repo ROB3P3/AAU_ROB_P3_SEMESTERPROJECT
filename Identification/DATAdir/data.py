@@ -50,11 +50,9 @@ class ImageData:
     def setSeperatedThresholdedImage(self, image):
         self.seperatedThresholdedImage = image
 
-    def setCalibratedRGBImage(self, image):
-        self.calibratedRGBImage = image
-
-    def setCalibratedThresholdedImage(self, image):
-        self.calibratedThresholdedImage = image
+    def setCalibratedImages(self, imageRGB, imageThresholded):
+        self.calibratedRGBImage = imageRGB
+        self.calibratedThresholdedImage = imageThresholded
 
     def setAtributesFromSizeFinder(self, sizeRreturnList):
         self.fishLenghts = sizeRreturnList[0]
@@ -65,13 +63,14 @@ class ImageData:
         self.separateContours = sizeRreturnList[5]
         self.extremePointList1 = sizeRreturnList[6]
         self.extremePointList2 = sizeRreturnList[7]
+        self.fishAreas = sizeRreturnList[8]
     
-    def setAttributesFromGrippingPoints(self, grippingPointOutput):
-        self.fishGrippingPoints = grippingPointOutput[0]
-        self.fishWidths = grippingPointOutput[1]
+    def setAttributesFromGrippingPoints(self, gPointsOutput):
+        self.fishGrippingPoints = gPointsOutput[0]
+        self.fishWidths = gPointsOutput[1]
     
-    def setAverageHSV(self, averageHSV):
-        self.fishAverageHSV = averageHSV
+    def setAverageHSV(self, avgHSVList):
+        self.fishAverageHSV = avgHSVList
     
     def setSpeciesFromClassifier(self, speciesList):
-        self.species = speciesList
+        self.fishSpecies = speciesList

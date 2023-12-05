@@ -7,6 +7,7 @@ import time
 import multiprocessing as mp
 from fractions import Fraction
 
+
 class SizeFinder:
     def __init__(self) -> None:
         print("Sizefinder initialized:")
@@ -19,7 +20,6 @@ class SizeFinder:
             if k == 48:
                 break
             # print(k)
-
 
     def browseImages(self, imageList):
         """Function to show an image until left or right arrow is pressed, then show the next or previous image in the array."""
@@ -40,28 +40,30 @@ class SizeFinder:
                 break
             print(i)
 
-
-    def blobProperties(self, contours, y ,x):
+    def blobProperties(self, contours, y, x):
         """Function which returns a list of the properties of all blobs in an image.
-        These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
         It also returns a list containing the positions of the pixels with the minumum and maximum X- and Y-values."""
         properties = []
         positions = []
         separateContours = []
+        areas = []
         fishID = 1
 
         # Goes through every blob
         for contour in contours:
+            properties.append([])
             averagePoint = []
-            add = fishID
-
-            properties.append(add)
+            properties[fishID-1].append(fishID)
 
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            #self.showImage([extracted])
+            # self.showImage([extracted])
 
+            # Get all pixel positions in contour to calculate average point
+            extracted = np.zeros((y, x), np.uint8)
+            extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
+            # self.showImage([extracted])
 
             # Make a copy of the blobs in RGB to use as a comparison image
             blobsRGB = extracted.copy()
@@ -101,7 +103,6 @@ class SizeFinder:
                 # Calculate the lenght of the line from the start to the end point
                 lenght = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
-
                 # If the percentage of black pixels in the triangle is greater than 75% and the lenght of the line is greater than 100 pixels
                 # then draw the line from both the start adnd end point to the far point instead of from the start to the end point
                 if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
@@ -112,8 +113,6 @@ class SizeFinder:
                 else:
                     cv2.line(boundedContours, start, end, 255, 2)
 
-            # showImage([image, imageBlobs])
-
             # Extract the new bounded contour
             boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
@@ -122,10 +121,15 @@ class SizeFinder:
             # Get all pixel positions in contour to calculate average point
             yPixelValues, xPixelValues = np.nonzero(extractedBounded)
             # print(yPixelValues, xPixelValues)
-            # showImage([extractedBounded])
+            # self.showImage([extractedBounded])
 
             # Add each bounded contour to a list so they can be accessed separately
             separateContours.append(boundedContours)
+
+            # Get area of bounded contour
+            area = cv2.contourArea(boundedContours[0])
+            areas.append(area)
+
 
             # Calculate the average x and y values to get the average point in the blob
             averagePointX = round(sum(xPixelValues) / len(xPixelValues))
@@ -152,27 +156,28 @@ class SizeFinder:
 
             fishID += 1
 
-        return properties, positions, separateContours
-
+        return properties, positions, separateContours, areas
 
     def findSize(self, imageData):
         """Function to find the area and lenght of a fish(blob). image -> binary"""
-        image = imageData.seperatedThresholdedImage
-
+        image = imageData.filledThresholdedImage
 
         fishLenght = []
         fishOrientation = []
         averagePoints = []
+        extremePoint1List = []
+        extremePoint2List = []
         # List of RGB colors to differentiate between blobs later
         colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
-                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
-                (164, 19, 1), (90, 66, 98), (105, 116, 203), (106, 161, 253), (81, 205, 236), (76, 237, 191),
-                (132, 253, 135), (191, 251, 95), (233, 226, 96), (254, 189, 93), (248, 137, 71), (224, 95, 56),
-                (182, 66, 52), (230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
-                (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
-                (164, 19, 1), (90, 66, 98), (105, 116, 203), (106, 161, 253), (81, 205, 236), (76, 237, 191),
-                (132, 253, 135), (191, 251, 95), (233, 226, 96), (254, 189, 93), (248, 137, 71), (224, 95, 56),
-                (182, 66, 52)]
+                   (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
+                   (164, 19, 1), (90, 66, 98), (105, 116, 203), (106, 161, 253), (81, 205, 236), (76, 237, 191),
+                   (132, 253, 135), (191, 251, 95), (233, 226, 96), (254, 189, 93), (248, 137, 71), (224, 95, 56),
+                   (182, 66, 52), (230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231),
+                   (31, 233, 175),
+                   (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
+                   (164, 19, 1), (90, 66, 98), (105, 116, 203), (106, 161, 253), (81, 205, 236), (76, 237, 191),
+                   (132, 253, 135), (191, 251, 95), (233, 226, 96), (254, 189, 93), (248, 137, 71), (224, 95, 56),
+                   (182, 66, 52)]
         invertedColors = []
         for i in range(len(colours)):
             invertedColors.append((255 - colours[i][0], 255 - colours[i][1], 255 - colours[i][2]))
@@ -187,7 +192,7 @@ class SizeFinder:
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
         contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
-        blobsData, positions, separateContours = self.blobProperties(sortedContours, y, x)
+        blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
@@ -269,14 +274,16 @@ class SizeFinder:
             convertedLenght = round(totalLenght)
 
             # Label lenght of fish
-            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0],averagePoint[1]+25), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (255, 255, 255), 1, cv2.LINE_AA)
-
 
             # Label blobs
             fishText = "Fish" + str(fishID)
+            #fishText = str(round(blobsData[i][1]))
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -297,8 +304,10 @@ class SizeFinder:
 
             fishOrientation.append(angles)
             averagePoints.append(averagePoint)
+            extremePoint1List.append(extremePoint1)
+            extremePoint2List.append(extremePoint2)
             imagePlotAll = cv2.add(imagePlotAll, imagePlot)
 
         # print(fishLenght)
-        self.showImage([imagePlotAll])
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours
+        #self.showImage([imagePlotAll])
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours, extremePoint1List, extremePoint2List, fishAreas
