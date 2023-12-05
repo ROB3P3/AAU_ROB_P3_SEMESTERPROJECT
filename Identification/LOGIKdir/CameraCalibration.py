@@ -8,6 +8,7 @@ from identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
 class CalibrateImage:
     def __init__(self) -> None:
         print("Sizefinder initialized:")
+        print("test")
 
     def clearDirectory(self, path):
         """Delete all files in the given folder"""
