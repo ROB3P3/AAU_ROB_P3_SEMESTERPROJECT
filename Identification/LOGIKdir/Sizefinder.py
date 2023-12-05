@@ -67,7 +67,7 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
         # Get all pixel positions in contour to calculate average point
         extracted = np.zeros((y, x), np.uint8)
         extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-        yPixelValues, xPixelValues = np.nonzero(extracted)
+
 
         # Make a copy of the blobs in RGB to use as a comparison image
         blobsRGB = extracted.copy()
@@ -144,12 +144,17 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
 
         # Extract the new bounded contour
         boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+
         extractedBounded = np.zeros((y, x), np.uint8)
         extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
+        # Get all pixel positions in contour to calculate average point
+        yPixelValues, xPixelValues = np.nonzero(extractedBounded)
+        print(yPixelValues, xPixelValues)
         #showImage([extractedBounded])
 
         # Add each bounded contour to a list so they can be accessed separately
-        separateContours.append(extractedBounded)
+        separateContours.append(boundedContours)
 
         # Calculate the average x and y values to get the average point in the blob
         averagePointX = round(sum(xPixelValues) / len(xPixelValues))
@@ -176,7 +181,7 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
 
         # combine all the extracted blobs into one image
 
-        cv2.drawContours(allExtracted, boundedContours, -1, 255, -1)
+        # cv2.drawContours(allExtracted, boundedContours, -1, 255, -1)
 
         fishID += 1
     #showImage([image, imageBlobs, allExtracted])
@@ -216,9 +221,11 @@ def findSize(image, originalImage):
     contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
     blobsData, positions, separateContours = blobProperties(sortedContours, y, x, originalImage, contoursDrawn)
 
-    imagePlot = image.copy()
-    imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
+    imagePlotAll = np.zeros((y, x), np.uint8)
+    imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
     for i, fishID in enumerate(blobsData):
+        imagePlot = np.zeros((y, x), np.uint8)
+        imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
 
         averagePoint = positions[i][4]
         extremePointLeft = positions[i][0]
@@ -230,7 +237,7 @@ def findSize(image, originalImage):
         originalImage = cv2.rectangle(originalImage, [extremePointLeft[0], extremePointTop[1]],
                                       [extremePointRight[0], extremePointBottom[1]], colours[i], 2)
 
-        cv2.drawContours(imagePlot, [sortedContours[i]], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
+        cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
         lineColor = singleRGBcolor(round(255 / 2))
 
@@ -321,8 +328,9 @@ def findSize(image, originalImage):
 
         fishOrientation.append(angles)
         averagePoints.append(averagePoint)
+        imagePlotAll = cv2.add(imagePlotAll, imagePlot)
 
-    return fishLenght, fishOrientation, imagePlot, originalImage, averagePoints, separateContours, extremePointList
+    return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours, extremePointList
 
 
 def pathingSetup(group, rootPath):
