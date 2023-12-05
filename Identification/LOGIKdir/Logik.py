@@ -29,6 +29,8 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/ColourTH".format(rootPath, group))
     if not os.path.exists("{}/group_{}/THSum".format(rootPath, group)):
         os.makedirs("{}/group_{}/THSum".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
+        os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
 def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, imageDataList):
     "This function is the one executed by the indeidual processes created in the Tredding class"
@@ -46,7 +48,12 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
             cv2.imwrite("size"+str(i+1)+".png",imageData.annotatedImage)
             cv2.imwrite("OG"+str(i+1)+".png",imageData.boundingBoxImage)
-            imageDataList[i-1] = imageData.boundingBoxImage
+            print("{}/group_{}/Results/".format(outputDataRootPath, group)+str(startingNumber)+".txt")
+            os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
+            f = open("result{}.txt".format(startingNumber),"w")
+            f.write(str(imageData.index))
+            f.write("\n")
+            f.close
 
 class thredding:
     "This Class handles thredding and load balencing"

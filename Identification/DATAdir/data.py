@@ -28,9 +28,11 @@ class ImageData:
         self.cropedImage = cropper.imgCropped
 
     def setColourThresholdedImage(self, image):
+        " Set the binary image wich represent the color threshold applied to the original PNG"
         self.colourThrsholdedImage = image
     
     def setDepthThresholding(self, image):
+        " Set the image wich represents the original"
         self.depthThresholding = image
 
     def setRawThresholdedImage(self, image):

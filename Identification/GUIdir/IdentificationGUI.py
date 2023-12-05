@@ -100,7 +100,7 @@ class StartPage(Frame):
         self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
                              textvariable=self.IPValue)
         self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        self.IPField.insert(tk.END, "127.0.0.1")
+        self.IPField.insert(tk.END, "172.26.50.223")
         self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
                                textvariable=self.portValue)
         self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
@@ -117,7 +117,7 @@ class StartPage(Frame):
                                textvariable=self.pathValue)
         self.pathField.place(relx=0.5, rely=0.40, anchor=CENTER)
         # insert test path
-        self.pathField.insert(tk.END, r"C:/Users/frderik/OneDrive - Aalborg Universitet/autofish_rob3")
+        self.pathField.insert(tk.END, r"C:/FishProject")
         self.pathButton = Button(self, text="Check", command=lambda: self.checkPath(), font=("Arial", "20"), bg="black",
                                  fg="white")
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
@@ -251,7 +251,7 @@ class StartPage(Frame):
     def checkForFiles(self):
         """Check if each group folder contains the necessary files."""
         for group in self.groupFolders:
-            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/rs/*.png".format(group))
+            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/*.png".format(group))
             fishFileValidation = glob.glob(self.path + r"/{}/rs/rgb/*.png".format(group))
             outputPathValidation = os.path.isdir(self.path + r"/{}/output/")
             depthFileValidation = glob.glob(self.path + r"/{}/rs/depth/*.png".format(group))
@@ -390,12 +390,12 @@ class PageOne(Frame):
         #print((self.groupList.curselection()).split("_"))
         print(self.controller.frames["StartPage"].path)
         
-        #self.controller.show_frame("PageTwo")
-        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups)
+        #self.controller.show_frame("PageTwo") # here the update progress page is called to display
+        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups) # strats the Identefikation process on the chosen groups
 
 
 class PageTwo(Frame):
-    """Frame to show the identification progress"""
+    """Frame to show the identification progress. This is not currently in use and can be ignored"""
 
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
