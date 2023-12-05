@@ -34,7 +34,7 @@ def pathingSetup(group, rootPath):
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifier, imageDataList):
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifierClass, gausClassifier, imageDataList):
     "This function is the one executed by the indeidual processes created in the Tredding class"
     for i, fileName in enumerate(indexFileNameList):
             i += startingNumber
@@ -47,9 +47,8 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
             imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
             imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
-            imageData.setAverageHSV(classifier.calculateAverageHSV(imageData))
-            imageData.setSpeciesFromClassifier(classifier.predictSpecies(imageData))
-            
+            imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
+            imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gausClassifier, imageData))
             
             os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
             cv2.imwrite("size"+str(i+1)+".png",imageData.annotatedImage)
@@ -63,7 +62,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
 class thredding:
     "This Class handles thredding and load balencing"
-    def __init__(self, numberOfThreads,images ,picturesPerGroup, group, outputDataRootPath, imageDataList):
+    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, imageDataList, gausClassifier):
         "Creates the thredding class and creates the processes based on the given params"
         self.process = []
         indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1])
@@ -79,11 +78,11 @@ class thredding:
                 if Offset != 0:
                     indexOffsetEnd +=1
                     Offset -= 1
-                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, imageDataList)))
             elif i == numberOfThreads-1:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, imageDataList)))
             else:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, imageDataList)))
 
     def start(self):
         "Starts the processes initialized in the class"
@@ -105,12 +104,13 @@ def logikHandle (pathInputRoot, groups):
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
         
-
+        gaussianClassifier = Classifier.createClassifier(pathInputRoot + "/training_data.csv", pathInputRoot + "/validation_data.csv")
+        
         pathingSetup(group, outputDataRootPath)
         
         imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
 
-        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, imageDataList)
+        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, imageDataList, gaussianClassifier)
 
         process.start()
     

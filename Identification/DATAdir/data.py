@@ -66,9 +66,9 @@ class ImageData:
         self.extremePointList1 = sizeRreturnList[6]
         self.extremePointList2 = sizeRreturnList[7]
     
-    def setAttributesFromGrippingPoints(self, gPointsOutput):
-        self.grippingPoints = gPointsOutput[0]
-        self.fishWidths = gPointsOutput[1]
+    def setAttributesFromGrippingPoints(self, grippingPointOutput):
+        self.fishGrippingPoints = grippingPointOutput[0]
+        self.fishWidths = grippingPointOutput[1]
     
     def setAverageHSV(self, averageHSV):
         self.fishAverageHSV = averageHSV

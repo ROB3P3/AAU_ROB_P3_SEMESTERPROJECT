@@ -54,8 +54,8 @@ class Classifier:
     
     def createClassifier(self, trainingDataPath, valDataPath):
         """Create a Gaussian Naive Bayes classifier and train it with the training data"""
-        trainingData = pd.read_csv("C:/Users/takek/Dropbox/PC (3)/Documents/University/Semester 3/P3/Project/Classifier/training_data.csv", usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
-        valData = pd.read_csv("C:/Users/takek/Dropbox/PC (3)/Documents/University/Semester 3/P3/Project/Classifier/validation_data.csv", usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
+        trainingData = pd.read_csv(trainingDataPath, usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
+        valData = pd.read_csv(valDataPath, usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
         
         # Create arrays of features and species in same order for training and validation data
         trainFeatureArray, trainSpeciesArray = self.extractFeatures(trainingData)
@@ -79,7 +79,7 @@ class Classifier:
         disp.plot()
         plt.show() """
         
-        return gausClassifier, accuracy, f1
+        return gausClassifier
 
     def calculateAverageHSV(self, imageData):
         """Calculate the average HSV value of each fish by using the contours of the fish"""
