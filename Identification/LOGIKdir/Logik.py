@@ -6,6 +6,8 @@ import multiprocessing as mp
 from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
+from LOGIKdir.GrippingPoints import GrippingPoints
+from LOGIKdir.Classifier import Classifier
 from DATAdir.data import ImageData
 from LOGIKdir.CameraCalibration import ImageCalibrator
 import time
@@ -34,7 +36,7 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, calibrationValues):
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifierClass, gaussianClassifier, calibrationValues):
     "This function is the one executed by the indeidual processes created in the Tredding class. This takes care of all the image prosessing"
     calibrator = ImageCalibrator()
     for i, fileName in enumerate(indexFileNameList):
@@ -55,6 +57,9 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
         # Runs and saves output from SizeFinder
         imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
+        imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
+        imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
+        imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
 
         # Writes Size images and boundingboxes to files
         os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
@@ -65,6 +70,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
         f = open("result{}.txt".format(startingNumber), "a")
         f.write(str(imageData.index))
+        f.write(str(imageData.fishSpecies))
         f.write("\n")
         f.close
 
@@ -72,7 +78,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 class thredding:
     "This Class handles thredding and load balencing"
 
-    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages):
+    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gausClassifier):
         """Creates the thredding class and creates the processes based on the given params.
         Runs the calibration for the group before distributing the individual images to threads."""
         # Get the calibration values for the group
@@ -95,15 +101,15 @@ class thredding:
                     indexOffsetEnd += 1
                     Offset -= 1
                 self.process.append(mp.Process(target=taskHandeler, args=(
-                images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
+                images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
             elif i == numberOfThreads - 1:
                 self.process.append(mp.Process(target=taskHandeler, args=(
                 images[i * indexJump + indexOffsetStart:picturesPerGroup + 1], i * indexJump + indexOffsetStart, group,
-                outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
+                outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
             else:
                 self.process.append(mp.Process(target=taskHandeler, args=(
                 images[i * indexJump + indexOffsetStart:(i + 1) * indexJump + indexOffsetEnd],
-                i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
+                i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
 
     def start(self):
         "Starts the processes initialized in the class"
@@ -117,6 +123,10 @@ class thredding:
 def logikHandle(pathInputRoot, groups):
     # For timing the prosessings runtime. Not critical for function
     startTime = time.time()
+    
+    clf = Classifier()
+    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv", "./Identification/DATAdir/validation_data.csv")
+    
 
     for group in groups:
         ########################################### Setup params ##############################################
@@ -126,14 +136,14 @@ def logikHandle(pathInputRoot, groups):
         numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
-
-        # Generates the requred directories for the proggram, if they do not allready exist
+        
         pathingSetup(group, outputDataRootPath)
+        
+        imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
 
         # An object containing all the threadded image prosessing tasks
-        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages)
+        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gaussianClassifer)
 
-        # Start the theadded tasks
         process.start()
 
     # For timing the prosessings runtime. Not critical for function
@@ -141,6 +151,5 @@ def logikHandle(pathInputRoot, groups):
 
 
 def logikStart(pathInputRoot, groups):
-    "Set up a thread to handle the logick setup, does not rejoin the main thread"
     logik = mp.Process(target=logikHandle, args=(pathInputRoot, groups))
     logik.start()
