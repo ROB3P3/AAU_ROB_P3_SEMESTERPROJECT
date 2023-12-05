@@ -180,7 +180,7 @@ class SizeFinder:
         # self.showImage([image, imageBlobs, allExtracted])
         return properties, positions, separateContours
 
-    def findSize(self, image, originalImage):
+    def findSize(self, image, originalImage = None):
         """Function to find the area and lenght of a fish(blob). image -> binary"""
 
         fishLenght = []
