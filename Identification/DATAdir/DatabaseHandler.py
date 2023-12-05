@@ -8,8 +8,8 @@ class Database():
     def __init__(self, IPAddress, port):
         self.IPAddress = IPAddress
         self.port = port
-        self.mysql = mysql.connector.connect(host=self.IPAddress, port=self.port, user="frederik", password="frederik",
-                                             database="fisk")
+        self.mysql = mysql.connector.connect(host=self.IPAddress, port=self.port, user="Frederik", password="Frederik",
+                                             database="test")
         self.curs = self.mysql.cursor(buffered=True)
 
 
