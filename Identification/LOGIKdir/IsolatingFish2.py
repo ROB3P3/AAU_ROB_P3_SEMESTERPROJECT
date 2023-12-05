@@ -214,12 +214,14 @@ class Thresholder:
         return imageEdgeBlurDilated
 
     def seperate(self, imageThreshold, imageEdges):
+        " Seperates the fish in the thresholded image based on the edges in the original PNG"
         image = cv2.subtract(imageThreshold,imageEdges)
 
         element = cv2.getStructuringElement(1, (2 * 1 + 1, 2 * 1 + 1),
                                                 (1, 1))
         imageErode = cv2.erode(image,element)
 
+        #The lines below fills holes made by unconnected lines found in the original PNG
         contour = cv2.findContours(imageErode,cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)[0]
 
         for cnt in contour:
@@ -232,10 +234,11 @@ class Thresholder:
         realevant images to the outputDataRootPath
         This function also updates data in the imageData object """
 
+        # Creates a cropper for the given image and atatchet it to the data object        
         imageData.setCropper(Cropper())
         
+        # calculates and saves the thresholded images based on original data
         imageData.setColourThresholdedImage(self.thresholdImage(imageData))
-
         imageData.setDepthThresholding(self.thresholdDepthMap(imageData))
 
         # combine depth and colour thresholdings to a raw combination
@@ -244,11 +247,14 @@ class Thresholder:
         # fill holes in the raw thresholded image
         imageData.setFilledThresholdedImage(self.fillHoles(imageData.rawThresholdedImage))
 
-        # 
+        # saves the edges found on the original PNG
         imageData.setImageEdges(self.findEdge(imageData.img))
-
+        
+        # saves the final seperated thresholded image ready for further prosesing 
         imageData.setSeperatedThresholdedImage(self.seperate(imageData.filledThresholdedImage, imageData.imageEdges))
 
+
+        # Writes all the generated images to files in the THData directory
         os.chdir("{}/group_{}/THData".format(outputDataRootPath, imageData.group))
         cv2.imwrite("0000" + str(imageData.index) + "CP.png", imageData.cropedImage)
         cv2.imwrite("0000" + str(imageData.index) + "TH.png", imageData.filledThresholdedImage)
@@ -257,9 +263,7 @@ class Thresholder:
         cv2.imwrite("0000" + str(imageData.index) + "ColourTH.png", imageData.colourThrsholdedImage)
         cv2.imwrite("0000" + str(imageData.index) + "DepthTH.png", imageData.depthThresholding)
 
-
-
-
+        # Writes all generated images to files in seperated folders
         os.chdir("{}/group_{}/CP".format(outputDataRootPath, imageData.group))
         cv2.imwrite("0000" + str(imageData.index) + "CP.png", imageData.cropedImage)
         os.chdir("{}/group_{}/THSum".format(outputDataRootPath, imageData.group))
