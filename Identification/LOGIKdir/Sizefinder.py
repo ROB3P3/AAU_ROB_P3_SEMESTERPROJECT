@@ -2,8 +2,6 @@ import glob
 import cv2
 import numpy as np
 import math
-import IsolatingFish2
-from CameraCalibration import WarpPerspective
 import os
 import time
 import multiprocessing as mp
