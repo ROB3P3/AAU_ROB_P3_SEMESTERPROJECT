@@ -2,7 +2,7 @@ import glob
 import cv2
 import numpy as np
 import math
-#import IsolatingFish2
+# import IsolatingFish2
 from CameraCalibration import WarpPerspective
 import os
 import time
@@ -45,17 +45,16 @@ def singleRGBcolor(color):
     return [color, color, color]
 
 
-def blobProperties(contours, y, x, image, imageVlobs):
+def blobProperties(contours, y, x, image=None, imageBlobs=None):
     """Function which returns a list of the properties of all blobs in an image.
     These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
     It also returns a list containing the positions of the pixels with the minumum and maximum X- and Y-values."""
     properties = []
     positions = []
     separateContours = []
+    allExtracted = np.zeros((y, x), np.uint8)
     fishID = 1
-    imageVlobs = cv2.cvtColor(imageVlobs, cv2.COLOR_GRAY2RGB)
-
-
+    imageBlobs = cv2.cvtColor(imageBlobs, cv2.COLOR_GRAY2RGB)
 
     # Goes through every blob
     for contour in contours:
@@ -68,100 +67,89 @@ def blobProperties(contours, y, x, image, imageVlobs):
         # Get all pixel positions in contour to calculate average point
         extracted = np.zeros((y, x), np.uint8)
         extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-        blobs = extracted.copy()
-        blobs = cv2.cvtColor(blobs, cv2.COLOR_GRAY2RGB)
-
-        boundedContours = extracted.copy()
-        separateContours.append(extracted)
-
-        #showImage([extracted])
         yPixelValues, xPixelValues = np.nonzero(extracted)
+
+        # Make a copy of the blobs in RGB to use as a comparison image
+        blobsRGB = extracted.copy()
+        blobsRGB = cv2.cvtColor(blobsRGB, cv2.COLOR_GRAY2RGB)
+
+        # Make a copy of the image to draw on
+        boundedContours = extracted.copy()
+
+        # Find the convex hull of the contour
         hull = cv2.convexHull(contour, returnPoints=False)
-        hullPoints = cv2.convexHull(contour, returnPoints=True)
+        """hullPoints = cv2.convexHull(contour, returnPoints=True)
         for i in range(len(hullPoints)):
             cv2.circle(image, tuple(hullPoints[i][0]), 4, [135, 0, 135], -1)
-            cv2.circle(imageVlobs, tuple(hullPoints[i][0]), 4, [135, 0, 135], -1)
+            cv2.circle(imageBlobs, tuple(hullPoints[i][0]), 4, [135, 0, 135], -1)"""
 
-        #showImage([imageVlobs])
-        #hullContour = cv2.drawContours(imageVlobs, [hull], -1, [0,255,0], 3)
+        # Find the convexity defects of the contour and use them to draw the convex hull
         defects = cv2.convexityDefects(contour, hull)
         for i in range(defects.shape[0]):
             blackPixels = 0
+
+            # Get the start, end, and far points of the convexity defect
             s, e, f, d = defects[i, 0]
             start = tuple(contour[s][0])
             end = tuple(contour[e][0])
             far = tuple(contour[f][0])
+
+            # Draw a triangle with the start, end, and far points
             triangle = np.array([start, end, far])
 
+            # Draw that triangle on a blank image and get the pixel positions of the triangle
             extractedTriangle = np.zeros((y, x), np.uint8)
             extractedTriangle = cv2.drawContours(extractedTriangle, [triangle], -1, 255, -1)
             yPixelValuesTriangle, xPixelValuesTriangle = np.nonzero(extractedTriangle)
-            # go through every pixel and count the amount of black pixels
+            # go through every pixel of the triangle and count the amount of black pixels in the original contour
             for j in range(len(xPixelValuesTriangle)):
-                if all(blobs[yPixelValuesTriangle[j]][xPixelValuesTriangle[j]]) == 0:
-                    #print("black pixel")
+                if all(blobsRGB[yPixelValuesTriangle[j]][xPixelValuesTriangle[j]]) == 0:
+                    # print("black pixel")
                     blackPixels += 1
 
-            print("Percentage of black pixels: ", blackPixels/len(xPixelValuesTriangle))
+            # print("Percentage of black pixels: ", blackPixels/len(xPixelValuesTriangle))
 
-
-
+            # Calculate the lenght of the line from the start to the end point
             lenght = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
-            angle1 = (math.atan2((start[1] - far[1]),
+            """angle1 = (math.atan2((start[1] - far[1]),
                                  (start[0] - far[0]))) * 180 / math.pi
             angle2 = (math.atan2((end[1] - far[1]),
                                  (end[0] - far[0]))) * 180 / math.pi
-            angleBetweenExtremes = angle1 - angle2
+            angleBetweenExtremes = angle1 - angle2"""
 
-
-            #print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
+            # print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
             cv2.circle(image, far, 5, [0, 0, 255], -1)
-            cv2.circle(imageVlobs, far, 5, [0, 0, 255], -1)
+            #cv2.circle(imageBlobs, far, 5, [0, 0, 255], -1)
 
-            #if lenght > 150 and (-90 > angleBetweenExtremes > 90 or -270 < angleBetweenExtremes < -90 or 270 > angleBetweenExtremes > 90):
-
-            #if d > 4000 and lenght > 150 and (-90 > angleBetweenExtremes > 90 or -270 < angleBetweenExtremes < -90 or 270 > angleBetweenExtremes > 90):
-            if blackPixels/len(xPixelValuesTriangle) > 0.75 and lenght > 100:
-                print("d", d, angleBetweenExtremes)
-                #print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
+            # If the percentage of black pixels in the triangle is greater than 75% and the lenght of the line is greater than 100 pixels
+            # then draw the line from both the start adnd end point to the far point instead of from the start to the end point
+            if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
+                # print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
                 cv2.line(image, start, far, [0, 255, 0], 2)
-                cv2.line(imageVlobs, start, far, [0, 255, 0], 2)
+                #cv2.line(imageBlobs, start, far, [0, 255, 0], 2)
 
                 cv2.line(image, end, far, [0, 255, 0], 2)
-                cv2.line(imageVlobs, end, far, [0, 255, 0], 2)
-
-
-
-                cv2.putText(imageVlobs, str(round(d)), far, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (0, 0, 0), 4, cv2.LINE_AA)
-                cv2.putText(imageVlobs, str(round(d)), far, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (255, 0, 0), 1, cv2.LINE_AA)
-                cv2.putText(imageVlobs, str(round(angleBetweenExtremes)), (far[0],far[1]+17), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (0, 0, 0), 4, cv2.LINE_AA)
-                cv2.putText(imageVlobs, str(round(angleBetweenExtremes)), (far[0],far[1]+17), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (135, 135, 0), 1, cv2.LINE_AA)
+                #cv2.line(imageBlobs, end, far, [0, 255, 0], 2)
 
                 cv2.line(boundedContours, start, far, 255, 2)
-
+                cv2.line(boundedContours, end, far, 255, 2)
 
             else:
                 cv2.line(image, start, end, [0, 255, 0], 2)
-                cv2.line(imageVlobs, start, end, [0, 255, 0], 2)
+                #cv2.line(imageBlobs, start, end, [0, 255, 0], 2)
                 cv2.line(boundedContours, start, end, 255, 2)
 
+        # showImage([image, imageBlobs])
 
-
-        #showImage([image, imageVlobs])
-
+        # Extract the new bounded contour
         boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-
         extractedBounded = np.zeros((y, x), np.uint8)
-        print(len(boundedContours[0]), len(contour))
         extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
-        showImage([extractedBounded])
+        #showImage([extractedBounded])
 
-
+        # Add each bounded contour to a list so they can be accessed separately
+        separateContours.append(extractedBounded)
 
         # Calculate the average x and y values to get the average point in the blob
         averagePointX = round(sum(xPixelValues) / len(xPixelValues))
@@ -186,8 +174,12 @@ def blobProperties(contours, y, x, image, imageVlobs):
 
         positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
 
+        # combine all the extracted blobs into one image
+
+        cv2.drawContours(allExtracted, boundedContours, -1, 255, -1)
+
         fishID += 1
-    showImage([image, imageVlobs])
+    #showImage([image, imageBlobs, allExtracted])
     return properties, positions, separateContours
 
 
@@ -376,7 +368,7 @@ if __name__ == "__main__":
     imageList = []
     print(imagesBlobs)
     for h, fileName in enumerate(imagesBlobs):
-        if h == 3:
+        if h > -1:
             print(h)
             # Get png name and remove png ending
             print(fileName)
@@ -386,14 +378,15 @@ if __name__ == "__main__":
 
             imageOrg = cv2.imread(imagesOrg[h])
             imageOrg, points = WarpPerspective(imageOrg)
-            #showImage([imageOrg])
+            # showImage([imageOrg])
 
             imageBlob = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
             imageBlob, points = WarpPerspective(imageBlob, points)
-            #showImage([imageBlob])
+            # showImage([imageBlob])
 
             # imageThreshold = IsolatingFish.isolateFish(image)
-            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage, averagePoints, separateContours, extremePoints = findSize(imageBlob, imageOrg)
+            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage, averagePoints, separateContours, extremePoints = findSize(
+                imageBlob, imageOrg)
             annotatedImage = cv2.resize(annotatedImage, (960, 960))
             imageList.append(annotatedImage)
             # imageList.append(contours)
