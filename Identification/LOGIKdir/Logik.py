@@ -32,38 +32,32 @@ def pathingSetup(group, rootPath):
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder):
-    "This function is the one executed by the indeidual processes created in the Tredding class. This takes care of all the image prosessing"
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, imageDataList):
+    "This function is the one executed by the indeidual processes created in the Tredding class"
     for i, fileName in enumerate(indexFileNameList):
             i += startingNumber
-            # goes over all the images allocated to the thread
 
             print("now processing image:", fileName)
 
-            # init data object for the current image
             imageData = ImageData(fileName,i+1, group,)
 
-            # Thresholds image
             TH.isolate(outputDataRootPath, imageData)
 
-            # Runs and saves output from SizeFinder
             imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
             
-            # Writes Size images and boundingboxes to files
             os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
             cv2.imwrite("size"+str(i+1)+".png",imageData.annotatedImage)
             cv2.imwrite("OG"+str(i+1)+".png",imageData.boundingBoxImage)
-
-            # Writes realevant data for MySql comunication to txt file for future reference
+            print("{}/group_{}/Results/".format(outputDataRootPath, group)+str(startingNumber)+".txt")
             os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
-            f = open("result{}.txt".format(startingNumber),"a")
+            f = open("result{}.txt".format(startingNumber),"w")
             f.write(str(imageData.index))
             f.write("\n")
             f.close
 
 class thredding:
     "This Class handles thredding and load balencing"
-    def __init__(self, numberOfThreads,images ,picturesPerGroup, group, outputDataRootPath):
+    def __init__(self, numberOfThreads,images ,picturesPerGroup, group, outputDataRootPath, imageDataList):
         "Creates the thredding class and creates the processes based on the given params"
         self.process = []
         indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1])
@@ -79,11 +73,11 @@ class thredding:
                 if Offset != 0:
                     indexOffsetEnd +=1
                     Offset -= 1
-                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder())))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
             elif i == numberOfThreads-1:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder())))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
             else:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder())))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
 
     def start(self):
         "Starts the processes initialized in the class"
@@ -94,31 +88,28 @@ class thredding:
             element.join()
 
 def logikHandle (pathInputRoot, groups):
-
-    # For timing the prosessings runtime. Not critical for function
     startTime = time.time()
 
     for group in groups:
         ########################################### Setup params ##############################################
+        #pathInputRoot = "C:/Users/{}/OneDrive - Aalborg Universitet/autofish_rob3".format(user) # OBS!!!!! Change to directory to Data set ROOT (where the groups are)
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group)) 
-        outputDataRootPath = "C:/P3OutData/Merged" # where you want the program to create it's data folders (could be defined in GUI TBD)
-        numberOfThreads = mp.cpu_count() # Sets the amount of threads to use to match the threads on the computers CPU
+        outputDataRootPath = "C:/P3OutData/Merged" # where you want the program to create it's data folders
+        numberOfThreads = mp.cpu_count() # OBS!!!!! chose the amount of threds to use
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
+        
 
-        # Generates the requred directories for the proggram, if they do not allready exist
         pathingSetup(group, outputDataRootPath)
+        
+        imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
 
-        # An object containing all the threadded image prosessing tasks
-        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath)
+        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, imageDataList)
 
-        # Start the theadded tasks
         process.start()
     
-    # For timing the prosessings runtime. Not critical for function
     print("TIME:", str(startTime-time.time()))
 
 def logikStart(pathInputRoot, groups):
-    "Set up a thread to handle the logick setup, does not rejoin the main thread"
     logik = mp.Process(target=logikHandle, args=(pathInputRoot, groups))
     logik.start()
