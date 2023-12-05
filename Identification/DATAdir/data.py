@@ -55,6 +55,12 @@ class ImageData:
         " Set the image where the fish are seperated by the edges found in the original PNG"
         self.seperatedThresholdedImage = image
 
+    def setCalibratedRGBImage(self, image):
+        self.calibratedRGBImage = image
+
+    def setCalibratedThresholdedImage(self, image):
+        self.calibratedThresholdedImage = image
+
     def setAtributesFromSizeFinder(self, sizeRreturnList):
         " Handle the output of the SizeFinder function"
         self.fishLenghts = sizeRreturnList[0]
