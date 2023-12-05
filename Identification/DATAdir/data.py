@@ -50,6 +50,12 @@ class ImageData:
     def setSeperatedThresholdedImage(self, image):
         self.seperatedThresholdedImage = image
 
+    def setCalibratedRGBImage(self, image):
+        self.calibratedRGBImage = image
+
+    def setCalibratedThresholdedImage(self, image):
+        self.calibratedThresholdedImage = image
+
     def setAtributesFromSizeFinder(self, sizeRreturnList):
         self.fishLenghts = sizeRreturnList[0]
         self.fishOrientations = sizeRreturnList[1]
