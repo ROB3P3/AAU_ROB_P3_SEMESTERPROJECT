@@ -169,7 +169,11 @@ class ImageCalibrator:
         # Get warp matrix to perspective transform the images.
         warpMatrix = self.WarpPerspective(imageRGB)
         imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
+
+        #cv2.imshow("Blob before warp", imageBlobs)
         imageBlobs = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+        #cv2.imshow("Blob after warp", imageBlobs)
+        #cv2.waitKey(0)
 
         # Calibrate the warped image of fish.
         #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
@@ -186,7 +190,7 @@ class ImageCalibrator:
         # print("Writing to: ", newFileName)
         # cv2.imwrite(newFileName, imageUndistorted)
 
-        return imageRGBUndistorted, imageBlobsUndistorted
+        return [imageRGBUndistorted, imageBlobsUndistorted]
 
 
 """if __name__ == "__main__":

@@ -50,8 +50,8 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         TH.isolate(outputDataRootPath, imageData)
 
         # Calibrates RGB and thresholded image
-        #calibratedImages = calibrator.calibrateImage(imageData.img, imageData.filledThresholdedImage, calibrationValues)
-        #imageData.setCalibratedImages()
+        calibratedImages = calibrator.calibrateImage(imageData.img, imageData.filledThresholdedImage, calibrationValues)
+        imageData.setCalibratedImages(calibratedImages[0], calibratedImages[1])
 
         # Runs and saves output from SizeFinder
         imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))

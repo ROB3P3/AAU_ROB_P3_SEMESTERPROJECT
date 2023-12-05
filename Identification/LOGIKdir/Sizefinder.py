@@ -50,9 +50,8 @@ class SizeFinder:
 
         # Goes through every blob
         for contour in contours:
-            properties.append([])
             averagePoint = []
-            properties[fishID-1].append(fishID)
+
 
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
@@ -127,7 +126,7 @@ class SizeFinder:
 
             # Get area of bounded contour
             area = cv2.contourArea(boundedContours[0])
-            properties[fishID-1].append(area)
+            properties.append([fishID, area])
 
 
             # Calculate the average x and y values to get the average point in the blob
@@ -159,7 +158,7 @@ class SizeFinder:
 
     def findSize(self, imageData):
         """Function to find the area and lenght of a fish(blob). image -> binary"""
-        image = imageData.filledThresholdedImage
+        image = imageData.calibratedThresholdedImage
 
         fishLenght = []
         fishOrientation = []
@@ -281,8 +280,8 @@ class SizeFinder:
                         (255, 255, 255), 1, cv2.LINE_AA)
 
             # Label blobs
-            fishText = "Fish" + str(fishID)
-            #fishText = str(round(blobsData[i][1]))
+            #fishText = "Fish" + str(fishID[0])
+            fishText = str(round(blobsData[i][1]))
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -309,4 +308,9 @@ class SizeFinder:
 
         # print(fishLenght)
         #self.showImage([imagePlotAll])
+        # Get amount of files in C:/FishProject/group_4/output/Size/
+        #numberOfFiles = len(glob.glob("C:/FishProject/group_4/output/Size/*.png"))+1
+        imagePath = imageData.imagePath
+        name = imagePath.rsplit('\\', 1)[-1]
+        cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
         return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours, extremePoint1List, extremePoint2List
