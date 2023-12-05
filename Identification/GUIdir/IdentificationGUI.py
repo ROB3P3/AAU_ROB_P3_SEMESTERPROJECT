@@ -390,12 +390,12 @@ class PageOne(Frame):
         #print((self.groupList.curselection()).split("_"))
         print(self.controller.frames["StartPage"].path)
         
-        #self.controller.show_frame("PageTwo")
-        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups)
+        #self.controller.show_frame("PageTwo") # here the update progress page is called to display
+        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups) # strats the Identefikation process on the chosen groups
 
 
 class PageTwo(Frame):
-    """Frame to show the identification progress"""
+    """Frame to show the identification progress. This is not currently in use and can be ignored"""
 
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
