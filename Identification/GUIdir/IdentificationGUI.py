@@ -117,7 +117,7 @@ class StartPage(Frame):
                                textvariable=self.pathValue)
         self.pathField.place(relx=0.5, rely=0.40, anchor=CENTER)
         # insert test path
-        self.pathField.insert(tk.END, r"C:\FishProject")
+        self.pathField.insert(tk.END, r"C:/FishProject")
         self.pathButton = Button(self, text="Check", command=lambda: self.checkPath(), font=("Arial", "20"), bg="black",
                                  fg="white")
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
@@ -251,7 +251,7 @@ class StartPage(Frame):
     def checkForFiles(self):
         """Check if each group folder contains the necessary files."""
         for group in self.groupFolders:
-            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/*.png".format(group))
+            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/rs/*.png".format(group))
             fishFileValidation = glob.glob(self.path + r"/{}/rs/rgb/*.png".format(group))
             outputPathValidation = os.path.isdir(self.path + r"/{}/output/")
             depthFileValidation = glob.glob(self.path + r"/{}/rs/depth/*.png".format(group))
