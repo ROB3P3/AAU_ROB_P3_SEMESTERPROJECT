@@ -7,6 +7,7 @@ from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
 from DATAdir.data import ImageData
+from LOGIKdir.cameraCalibration import WarpPerspective
 import time
 import glob
 
@@ -57,8 +58,8 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
 class thredding:
     "This Class handles thredding and load balencing"
-    def __init__(self, numberOfThreads,images ,picturesPerGroup, group, outputDataRootPath, imageDataList):
-        "Creates the thredding class and creates the processes based on the given params"
+    def __init__(self, numberOfThreads,images ,picturesPerGroup, group, outputDataRootPath):
+        "Creates the thredding class and creates the processes based on the given params. Runs the calibration for the group."
         self.process = []
         indexJump = int(math.modf(picturesPerGroup/numberOfThreads)[1])
         optimizeFraction = Fraction(math.modf(picturesPerGroup/numberOfThreads)[0]).limit_denominator(1000000)

@@ -117,7 +117,7 @@ class StartPage(Frame):
                                textvariable=self.pathValue)
         self.pathField.place(relx=0.5, rely=0.40, anchor=CENTER)
         # insert test path
-        self.pathField.insert(tk.END, r"C:/FishProject")
+        self.pathField.insert(tk.END, r"C:\FishProject")
         self.pathButton = Button(self, text="Check", command=lambda: self.checkPath(), font=("Arial", "20"), bg="black",
                                  fg="white")
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
