@@ -6,6 +6,8 @@ import multiprocessing as mp
 from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
+from LOGIKdir.GrippingPoints import GrippingPoints
+from LOGIKdir.Classifier import Classifier
 from DATAdir.data import ImageData
 import time
 import glob
@@ -32,7 +34,7 @@ def pathingSetup(group, rootPath):
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, imageDataList):
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifier, imageDataList):
     "This function is the one executed by the indeidual processes created in the Tredding class"
     for i, fileName in enumerate(indexFileNameList):
             i += startingNumber
@@ -44,6 +46,10 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             TH.isolate(outputDataRootPath, imageData)
 
             imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
+            imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
+            imageData.setAverageHSV(classifier.calculateAverageHSV(imageData))
+            imageData.setSpeciesFromClassifier(classifier.predictSpecies(imageData))
+            
             
             os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
             cv2.imwrite("size"+str(i+1)+".png",imageData.annotatedImage)
@@ -73,11 +79,11 @@ class thredding:
                 if Offset != 0:
                     indexOffsetEnd +=1
                     Offset -= 1
-                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[1:indexJump+indexOffsetEnd],1,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
             elif i == numberOfThreads-1:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:picturesPerGroup+1],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
             else:
-                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(),imageDataList)))
+                self.process.append(mp.Process(target=taskHandeler, args=(images[i*indexJump+indexOffsetStart:(i+1)*indexJump+indexOffsetEnd],i*indexJump+indexOffsetStart,group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), imageDataList)))
 
     def start(self):
         "Starts the processes initialized in the class"
