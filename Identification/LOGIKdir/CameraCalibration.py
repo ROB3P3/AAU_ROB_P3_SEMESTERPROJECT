@@ -2,13 +2,12 @@ import numpy as np
 import cv2
 import glob
 import os
-from identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
+from LOGIKdir.AutoCrop import Cropper as AutoCrop
 
 
-class CalibrateImage:
+class ImageCalibrator:
     def __init__(self) -> None:
-        print("Sizefinder initialized:")
-        print("test")
+        print("ImageCalibrator initialized:")
 
     def clearDirectory(self, path):
         """Delete all files in the given folder"""
@@ -17,7 +16,6 @@ class CalibrateImage:
         for file in files:
             # print("Deleted ", file)
             os.remove(file)
-
 
     def showImage(self, images):
         """Function to show an array of images until 0 is pressed"""
@@ -28,12 +26,12 @@ class CalibrateImage:
                 break
             print(k)
 
-
-    def WarpPerspective(self, image, fileName = None):
+    def WarpPerspective(self, image, fileName=None):
         """Warp the perspective of a 1920x1080 PNG in group 9 image to help account for the angle of the camera.
         Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
-        cropper = AutoCrop.Cropper(image)
-        minX = cropper.crop()
+        AutoCropper = AutoCrop()
+        AutoCropper.setImage(image)
+        minX = AutoCropper.crop()
         leftX1 = minX + 67
         leftX2 = minX + 70
         rightX1 = minX + 1235
@@ -48,10 +46,9 @@ class CalibrateImage:
         # print("Warping perspective of {}.".format(fileName))
         warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
         # Use the values from above to warp the image to a 1080x1080 pixel image.
-        return cv2.warpPerspective(image, warpMatrix, (1080, 1080))
+        return warpMatrix
 
-
-    def getImageCalibration(self, path):
+    def getImageCalibration(self, images):
         """Gets the values required for undistorting an image based on checkerboards in multiple images."""
         # termination criteria
         # Define the dimensions of checkerboard
@@ -71,20 +68,20 @@ class CalibrateImage:
         objectPoints3D = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
         objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
-        # Extracting path of individual images stored in a given directory.
-        images = glob.glob(path + "/calibration/*.png")
-        print(images)
-
+        print("Finding checkerboards in images...", images)
         for fileName in images:
             name = fileName.rsplit('\\', 1)[-1]
-            image = cv2.imread(fileName, cv2.IMREAD_UNCHANGED)
+            image = cv2.imread(fileName)
 
             # Warp perspective of board
-            image = WarpPerspective(image, name)
+            warpMatrix = self.WarpPerspective(image, name)
+            image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
 
             print("Finding Checkerboards for {}.".format(name))
             # Convert to greyscale
             grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            #grayColor = image
+
 
             # Find the chess board corners
             # If desired number of corners are found in the image then retval = true
@@ -134,21 +131,17 @@ class CalibrateImage:
 
         return [retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest]
 
-
-    def calibrateImage(self, correctionValues, mainPath, outputPath):
+    def calibrateImage(self, imageRGB, imageBlobs, calibrationValues):
         """Apllies the calibration values found in getImageCalibration() to the images in the group"""
         # Clear output folder to ensure only the newest files.
-        fishPath = mainPath + "rs/rgb/*.png"
-        calibrationPath = mainPath + "calibration/*.png"
-        #outputPathFish = outputPath + "WarpedCalibratedFish/{}"
-        #outputPathCalibration = outputPath + "WarpedCalibratedCheckerboard/{}"
+        # outputPathFish = outputPath + "WarpedCalibratedFish/{}"
+        # outputPathCalibration = outputPath + "WarpedCalibratedCheckerboard/{}"
         # Clear both output folders
-        #clearDirectory(outputPathFish.format("*"))
-        #clearDirectory(outputPathCalibration.format("*"))
+        # clearDirectory(outputPathFish.format("*"))
+        # clearDirectory(outputPathCalibration.format("*"))
 
-        # Get all images to calibrate
-        #fishImages = glob.glob(fishPath)
-        retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = correctionValues
+
+        retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
         """for fileName in fishImages:
             name = fileName.rsplit('\\', 1)[-1]
             image = cv2.imread(fileName)
@@ -169,31 +162,31 @@ class CalibrateImage:
     
             cv2.imwrite(newFileName, imageUndistorted)"""
 
-        # Get all calibration images to calibrate
-        calibrationImages = glob.glob(calibrationPath)
         # Write all calibration images to the output folder
-        for fileName in calibrationImages:
-            name = fileName.rsplit('\\', 1)[-1]
-            image = cv2.imread(fileName)
+        #name = imagePath.rsplit('\\', 1)[-1]
+        #image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
 
-            # Warp perspective on the fish images.
-            image = self.WarpPerspective(image, name)
+        # Get warp matrix to perspective transform the images.
+        warpMatrix = self.WarpPerspective(imageRGB)
+        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
+        imageBlobs = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
 
-            # Calibrate the warped image of fish.
-            print("Calibrating {} image {}.".format(calibrationPath.rsplit("/", 1)[-2], name))
-            imageUndistorted = cv2.undistort(image, matrix, distortion, None, newCameraMatrix)
+        # Calibrate the warped image of fish.
+        #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
+        imageRGBUndistorted = cv2.undistort(imageRGB, matrix, distortion, None, newCameraMatrix)
+        imageBlobsUndistorted = cv2.undistort(imageBlobs, matrix, distortion, None, newCameraMatrix)
 
-            # Crop image to region of interest
-            x, y, width, height = regionsOfInterest
-            imageUndistorted = imageUndistorted[y:y + height, x:x + width]
+        # Crop image to region of interest
+        x, y, width, height = regionsOfInterest
+        imageRGBUndistorted = imageRGBUndistorted[y:y + height, x:x + width]
+        imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
 
-            # showImage([imageUndistorted])
-            #newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
-            #print("Writing to: ", newFileName)
-            #cv2.imwrite(newFileName, imageUndistorted)
+        # showImage([imageUndistorted])
+        # newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
+        # print("Writing to: ", newFileName)
+        # cv2.imwrite(newFileName, imageUndistorted)
 
-        return imageUndistorted
-        # print("Finished warping and calibrating all fish images in group {}.".format(group))
+        return imageRGBUndistorted, imageBlobsUndistorted
 
 
 """if __name__ == "__main__":

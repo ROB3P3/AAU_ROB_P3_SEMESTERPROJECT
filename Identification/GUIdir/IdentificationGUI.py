@@ -251,7 +251,7 @@ class StartPage(Frame):
     def checkForFiles(self):
         """Check if each group folder contains the necessary files."""
         for group in self.groupFolders:
-            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/*.png".format(group))
+            calibrationFileValidation = glob.glob(self.path + r"/{}/calibration/rs/*.png".format(group))
             fishFileValidation = glob.glob(self.path + r"/{}/rs/rgb/*.png".format(group))
             outputPathValidation = os.path.isdir(self.path + r"/{}/output/")
             depthFileValidation = glob.glob(self.path + r"/{}/rs/depth/*.png".format(group))

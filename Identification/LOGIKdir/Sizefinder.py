@@ -159,11 +159,13 @@ class SizeFinder:
 
     def findSize(self, imageData):
         """Function to find the area and lenght of a fish(blob). image -> binary"""
-        image = imageData.seperatedThresholdedImage
+        image = imageData.filledThresholdedImage
 
         fishLenght = []
         fishOrientation = []
         averagePoints = []
+        extremePoint1List = []
+        extremePoint2List = []
         # List of RGB colors to differentiate between blobs later
         colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                    (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -279,8 +281,8 @@ class SizeFinder:
                         (255, 255, 255), 1, cv2.LINE_AA)
 
             # Label blobs
-            #fishText = "Fish" + str(fishID)
-            fishText = str(round(blobsData[i][1]))
+            fishText = "Fish" + str(fishID)
+            #fishText = str(round(blobsData[i][1]))
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -301,8 +303,10 @@ class SizeFinder:
 
             fishOrientation.append(angles)
             averagePoints.append(averagePoint)
+            extremePoint1List.append(extremePoint1)
+            extremePoint2List.append(extremePoint2)
             imagePlotAll = cv2.add(imagePlotAll, imagePlot)
 
         # print(fishLenght)
-        self.showImage([imagePlotAll])
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours
+        #self.showImage([imagePlotAll])
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours, extremePoint1List, extremePoint2List

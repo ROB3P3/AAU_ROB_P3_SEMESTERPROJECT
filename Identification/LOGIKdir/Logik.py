@@ -7,7 +7,7 @@ from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
 from DATAdir.data import ImageData
-#from LOGIKdir.CameraCalibration import WarpPerspective
+from LOGIKdir.CameraCalibration import ImageCalibrator
 import time
 import glob
 
@@ -34,8 +34,9 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder):
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, calibrationValues):
     "This function is the one executed by the indeidual processes created in the Tredding class. This takes care of all the image prosessing"
+    calibrator = ImageCalibrator()
     for i, fileName in enumerate(indexFileNameList):
         i += startingNumber
         # goes over all the images allocated to the thread
@@ -47,6 +48,10 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
         # Thresholds image
         TH.isolate(outputDataRootPath, imageData)
+
+        # Calibrates RGB and thresholded image
+        #calibratedImages = calibrator.calibrateImage(imageData.img, imageData.filledThresholdedImage, calibrationValues)
+        #imageData.setCalibratedImages()
 
         # Runs and saves output from SizeFinder
         imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
@@ -67,8 +72,14 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 class thredding:
     "This Class handles thredding and load balencing"
 
-    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath):
-        "Creates the thredding class and creates the processes based on the given params. Runs the calibration for the group."
+    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages):
+        """Creates the thredding class and creates the processes based on the given params.
+        Runs the calibration for the group before distributing the individual images to threads."""
+        # Get the calibration values for the group
+        calibrator = ImageCalibrator()
+        calibrationValues = calibrator.getImageCalibration(calibrationImages)
+
+        # Distributes the images to the threads
         self.process = []
         indexJump = int(math.modf(picturesPerGroup / numberOfThreads)[1])
         optimizeFraction = Fraction(math.modf(picturesPerGroup / numberOfThreads)[0]).limit_denominator(1000000)
@@ -84,15 +95,15 @@ class thredding:
                     indexOffsetEnd += 1
                     Offset -= 1
                 self.process.append(mp.Process(target=taskHandeler, args=(
-                images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath, Thresholder(), SizeFinder())))
+                images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
             elif i == numberOfThreads - 1:
                 self.process.append(mp.Process(target=taskHandeler, args=(
                 images[i * indexJump + indexOffsetStart:picturesPerGroup + 1], i * indexJump + indexOffsetStart, group,
-                outputDataRootPath, Thresholder(), SizeFinder())))
+                outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
             else:
                 self.process.append(mp.Process(target=taskHandeler, args=(
                 images[i * indexJump + indexOffsetStart:(i + 1) * indexJump + indexOffsetEnd],
-                i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder())))
+                i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(),calibrationValues)))
 
     def start(self):
         "Starts the processes initialized in the class"
@@ -110,6 +121,7 @@ def logikHandle(pathInputRoot, groups):
     for group in groups:
         ########################################### Setup params ##############################################
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))
+        calibrationImages = glob.glob("{}/group_{}/calibration/rs/*.png".format(pathInputRoot, group))
         outputDataRootPath = "C:/P3OutData/Merged"  # where you want the program to create it's data folders (could be defined in GUI TBD)
         numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
@@ -119,7 +131,7 @@ def logikHandle(pathInputRoot, groups):
         pathingSetup(group, outputDataRootPath)
 
         # An object containing all the threadded image prosessing tasks
-        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath)
+        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages)
 
         # Start the theadded tasks
         process.start()
