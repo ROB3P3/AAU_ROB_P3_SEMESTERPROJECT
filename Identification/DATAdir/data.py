@@ -61,3 +61,16 @@ class ImageData:
         self.boundingBoxImage = sizeRreturnList[3]
         self.averagePoints = sizeRreturnList[4]
         self.separateContours = sizeRreturnList[5]
+        self.extremePointList1 = sizeRreturnList[6]
+        self.extremePointList2 = sizeRreturnList[7]
+        self.fishAreas = sizeRreturnList[8]
+    
+    def setAttributesFromGrippingPoints(self, gPointsOutput):
+        self.fishGrippingPoints = gPointsOutput[0]
+        self.fishWidths = gPointsOutput[1]
+    
+    def setAverageHSV(self, avgHSVList):
+        self.fishAverageHSV = avgHSVList
+    
+    def setSpeciesFromClassifier(self, speciesList):
+        self.fishSpecies = speciesList

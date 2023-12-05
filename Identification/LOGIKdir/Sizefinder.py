@@ -46,6 +46,7 @@ class SizeFinder:
         properties = []
         positions = []
         separateContours = []
+        areas = []
         fishID = 1
 
         # Goes through every blob
@@ -154,7 +155,7 @@ class SizeFinder:
 
             fishID += 1
 
-        return properties, positions, separateContours
+        return properties, positions, separateContours, areas
 
     def findSize(self, imageData):
         """Function to find the area and lenght of a fish(blob). image -> binary"""
@@ -190,7 +191,7 @@ class SizeFinder:
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
         contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
-        blobsData, positions, separateContours = self.blobProperties(sortedContours, y, x)
+        blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
