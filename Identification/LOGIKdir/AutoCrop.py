@@ -9,17 +9,15 @@ class Cropper:
         self.imgCropped = 0
 
     def setImage(self, image):
-        " Updates the image being croped"
         self.img = image
         y, x = image.shape
         self.imgCropped = np.zeros((y,x))
 
     def findEdges(self):
-        " Find edges in the image wich is waht is used for the cropping"
+        #self.imgGrey = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         self.imgEdges = cv2.Canny(self.img,250,400,apertureSize=3)
     
     def findVerticalLines(self):
-        " creates lines based on the edges fond and then looks for the vertical ones to find the cropping points "
         self.imgLines = self.img
         # Finds lines in the image based on edges
         self.Lines = cv2.HoughLines(self.imgEdges, 1.7, np.pi/180,220)
@@ -51,7 +49,6 @@ class Cropper:
                     cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
     def crop(self):
-        " Applies the cropping and generates the mask. Use the xStart and xEnd to crop image"
         # This function executes the corpping and creates and atribute: imgCropped
         self.findEdges()
         self.findVerticalLines()

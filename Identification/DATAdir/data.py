@@ -32,27 +32,22 @@ class ImageData:
         self.colourThrsholdedImage = image
     
     def setDepthThresholding(self, image):
-        " Set the image wich represents the binary threshold of the original depth image"
+        " Set the image wich represents the original"
         self.depthThresholding = image
 
     def setRawThresholdedImage(self, image):
-        " Set the combined color and depth thresholded images"
         self.rawThresholdedImage = image
     
     def setThresholdedImage(self, image):
-        " "
         self.filledThresholdedImage = image
 
     def setFilledThresholdedImage(self, image):
-        " Set the filled combined thresholded image"
         self.filledThresholdedImage = image
 
     def setImageEdges(self, image):
-        " Set the image containing the edges found on the original PNG. The edges are set to WHITE"
         self.imageEdges = image
     
     def setSeperatedThresholdedImage(self, image):
-        " Set the image where the fish are seperated by the edges found in the original PNG"
         self.seperatedThresholdedImage = image
 
     def setCalibratedRGBImage(self, image):
@@ -62,7 +57,6 @@ class ImageData:
         self.calibratedThresholdedImage = image
 
     def setAtributesFromSizeFinder(self, sizeRreturnList):
-        " Handle the output of the SizeFinder function"
         self.fishLenghts = sizeRreturnList[0]
         self.fishOrientations = sizeRreturnList[1]
         self.annotatedImage = sizeRreturnList[2]
