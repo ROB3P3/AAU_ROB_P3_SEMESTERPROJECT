@@ -50,8 +50,9 @@ class SizeFinder:
 
         # Goes through every blob
         for contour in contours:
+            properties.append([])
             averagePoint = []
-            properties.append(fishID)
+            properties[fishID-1].append(fishID)
 
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
@@ -123,6 +124,11 @@ class SizeFinder:
 
             # Add each bounded contour to a list so they can be accessed separately
             separateContours.append(boundedContours)
+
+            # Get area of bounded contour
+            area = cv2.contourArea(boundedContours[0])
+            properties[fishID-1].append(area)
+
 
             # Calculate the average x and y values to get the average point in the blob
             averagePointX = round(sum(xPixelValues) / len(xPixelValues))
@@ -273,7 +279,8 @@ class SizeFinder:
                         (255, 255, 255), 1, cv2.LINE_AA)
 
             # Label blobs
-            fishText = "Fish" + str(fishID)
+            #fishText = "Fish" + str(fishID)
+            fishText = str(round(blobsData[i][1]))
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
