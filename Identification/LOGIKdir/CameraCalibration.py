@@ -10,7 +10,7 @@ def clearDirectory(path):
     print("Deleting files in: ", path)
     files = glob.glob(path)
     for file in files:
-        # print("Deleted ", file)
+        #print("Deleted ", file)
         os.remove(file)
 
 
@@ -24,19 +24,16 @@ def showImage(images):
         print(k)
 
 
-def WarpPerspective(image, points=None):
+def WarpPerspective(image, fileName):
     """Warp the perspective of a 1920x1080 PNG in group 9 image to help account for the angle of the camera.
     Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
-    if points == None:
-        cropper = AutoCrop.Cropper(image)
-        minX = cropper.crop()
-        leftX1 = minX + 67
-        leftX2 = minX + 70
-        rightX1 = minX + 1235
-        rightX2 = minX + 1270
-        points = [leftX1, leftX2, rightX1, rightX2]
-    else:
-        leftX1, leftX2, rightX1, rightX2 = points
+    cropper = AutoCrop.Cropper(image)
+    minX = cropper.crop()
+    leftX1 = minX + 67
+    leftX2 = minX + 70
+    rightX1 = minX + 1235
+    rightX2 = minX + 1270
+
 
     # Points in the orignal image indicating where to warp perspective to.
     # Change to use automatic detection of points.
@@ -44,10 +41,10 @@ def WarpPerspective(image, points=None):
     # What the originalPoints new values should be in the perspective warped image
     newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
     # Warp all checkerboard images and put them in their own folder.
-    # print("Warping perspective of {}.".format(fileName))
+    #print("Warping perspective of {}.".format(fileName))
     warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
     # Use the values from above to warp the image to a 1080x1080 pixel image.
-    return cv2.warpPerspective(image, warpMatrix, (1080, 1080)), points
+    return cv2.warpPerspective(image, warpMatrix, (1080, 1080))
 
 
 def getImageCalibration(path):
@@ -73,6 +70,7 @@ def getImageCalibration(path):
     # Extracting path of individual images stored in a given directory.
     images = glob.glob(path + "/calibration/*.png")
     print(images)
+
 
     for fileName in images:
         name = fileName.rsplit('\\', 1)[-1]
@@ -101,7 +99,7 @@ def getImageCalibration(path):
 
             # Draw and display the corners
             imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
-            # showImage([imageDrawn])
+            #showImage([imageDrawn])
         else:
             print("Can't find enough corners in {}.".format(name))
             # showImage([image])
@@ -168,6 +166,7 @@ def calibrateImage(correctionValues, mainPath, outputPath):
 
         cv2.imwrite(newFileName, imageUndistorted)"""
 
+
     # Get all calibration images to calibrate
     calibrationImages = glob.glob(calibrationPath)
     # Write all calibration images to the output folder
@@ -191,7 +190,7 @@ def calibrateImage(correctionValues, mainPath, outputPath):
         print("Writing to: ", newFileName)
         cv2.imwrite(newFileName, imageUndistorted)
 
-    # print("Finished warping and calibrating all fish images in group {}.".format(group))
+    #print("Finished warping and calibrating all fish images in group {}.".format(group))
 
 
 if __name__ == "__main__":
