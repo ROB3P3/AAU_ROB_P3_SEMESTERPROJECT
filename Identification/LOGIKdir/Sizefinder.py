@@ -2,7 +2,7 @@ import glob
 import cv2
 import numpy as np
 import math
-# import IsolatingFish2
+import IsolatingFish2
 from CameraCalibration import WarpPerspective
 import os
 import time
@@ -40,11 +40,6 @@ def browseImages(imageList):
         print(i)
 
 
-def singleRGBcolor(color):
-    """Function which converts single color to RGB. color -> [color, color, color]"""
-    return [color, color, color]
-
-
 def blobProperties(contours, y, x, image=None, imageBlobs=None):
     """Function which returns a list of the properties of all blobs in an image.
     These properties include: The ID, the center position and radius of the encolsing circle, and the ellipse.
@@ -67,7 +62,6 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
         # Get all pixel positions in contour to calculate average point
         extracted = np.zeros((y, x), np.uint8)
         extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-
 
         # Make a copy of the blobs in RGB to use as a comparison image
         blobsRGB = extracted.copy()
@@ -120,24 +114,24 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
 
             # print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
             cv2.circle(image, far, 5, [0, 0, 255], -1)
-            #cv2.circle(imageBlobs, far, 5, [0, 0, 255], -1)
+            # cv2.circle(imageBlobs, far, 5, [0, 0, 255], -1)
 
             # If the percentage of black pixels in the triangle is greater than 75% and the lenght of the line is greater than 100 pixels
             # then draw the line from both the start adnd end point to the far point instead of from the start to the end point
             if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
                 # print("lenght: ", lenght, "angleBetweenExtremes: ", angleBetweenExtremes)
                 cv2.line(image, start, far, [0, 255, 0], 2)
-                #cv2.line(imageBlobs, start, far, [0, 255, 0], 2)
+                # cv2.line(imageBlobs, start, far, [0, 255, 0], 2)
 
                 cv2.line(image, end, far, [0, 255, 0], 2)
-                #cv2.line(imageBlobs, end, far, [0, 255, 0], 2)
+                # cv2.line(imageBlobs, end, far, [0, 255, 0], 2)
 
                 cv2.line(boundedContours, start, far, 255, 2)
                 cv2.line(boundedContours, end, far, 255, 2)
 
             else:
                 cv2.line(image, start, end, [0, 255, 0], 2)
-                #cv2.line(imageBlobs, start, end, [0, 255, 0], 2)
+                # cv2.line(imageBlobs, start, end, [0, 255, 0], 2)
                 cv2.line(boundedContours, start, end, 255, 2)
 
         # showImage([image, imageBlobs])
@@ -145,13 +139,12 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
         # Extract the new bounded contour
         boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
-
         extractedBounded = np.zeros((y, x), np.uint8)
         extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
         # Get all pixel positions in contour to calculate average point
         yPixelValues, xPixelValues = np.nonzero(extractedBounded)
-        print(yPixelValues, xPixelValues)
-        #showImage([extractedBounded])
+        # print(yPixelValues, xPixelValues)
+        # showImage([extractedBounded])
 
         # Add each bounded contour to a list so they can be accessed separately
         separateContours.append(boundedContours)
@@ -181,10 +174,10 @@ def blobProperties(contours, y, x, image=None, imageBlobs=None):
 
         # combine all the extracted blobs into one image
 
-        # cv2.drawContours(allExtracted, boundedContours, -1, 255, -1)
+        cv2.drawContours(allExtracted, boundedContours, -1, 255, -1)
 
         fishID += 1
-    #showImage([image, imageBlobs, allExtracted])
+    showImage([image, imageBlobs, allExtracted])
     return properties, positions, separateContours
 
 
@@ -239,7 +232,7 @@ def findSize(image, originalImage):
 
         cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
-        lineColor = singleRGBcolor(round(255 / 2))
+        lineColor = (round(255 / 2), round(255 / 2), round(255 / 2))
 
         # Plot average point
         cv2.circle(imagePlot, averagePoint, 5, (255, 0, 0), -1)
@@ -370,36 +363,3 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath):
         cv2.imwrite("OG" + str(i + 1) + ".png", boundingBoxImage)
 
 
-if __name__ == "__main__":
-    imagesBlobs = glob.glob(r"C:/FishProject/Test/TestThresholds/*.png")
-    imagesOrg = glob.glob(r"C:/FishProject/Test/TestOrg/*.png")
-    imageList = []
-    print(imagesBlobs)
-    for h, fileName in enumerate(imagesBlobs):
-        if h > -1:
-            print(h)
-            # Get png name and remove png ending
-            print(fileName)
-            name = fileName.rsplit('\\', 1)[-1]
-            name = name[:-4]
-            print(name)
-
-            imageOrg = cv2.imread(imagesOrg[h])
-            imageOrg, points = WarpPerspective(imageOrg)
-            # showImage([imageOrg])
-
-            imageBlob = cv2.imread(fileName, cv2.IMREAD_GRAYSCALE)
-            imageBlob, points = WarpPerspective(imageBlob, points)
-            # showImage([imageBlob])
-
-            # imageThreshold = IsolatingFish.isolateFish(image)
-            fishLenghts, fishOrientations, annotatedImage, boundingBoxImage, averagePoints, separateContours, extremePoints = findSize(
-                imageBlob, imageOrg)
-            annotatedImage = cv2.resize(annotatedImage, (960, 960))
-            imageList.append(annotatedImage)
-            # imageList.append(contours)
-            """cv2.imwrite(
-                "C:/Users/klump/OneDrive/Billeder/Fishtestdata/Badly drawn/Comparison/" + name + "Program.png",
-                annotatedImage)"""
-
-    browseImages(imageList)
