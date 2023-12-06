@@ -15,7 +15,7 @@ import glob
 
 
 def pathingSetup(group, rootPath):
-    "Formats the file setup the program need. Run this before any of the image processing"
+    """Formats the file setup the program need. Run this before any of the image processing"""
     if not os.path.exists("{}/group_{}/Size".format(rootPath, group)):
         os.makedirs("{}/group_{}/Size".format(rootPath, group))
     if not os.path.exists("{}/group_{}/THData".format(rootPath, group)):
@@ -37,8 +37,13 @@ def pathingSetup(group, rootPath):
 
 
 def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifierClass, gaussianClassifier, calibrationValues):
-    "This function is the one executed by the indeidual processes created in the Tredding class. This takes care of all the image prosessing"
+    """This function is the one executed by the individual processes created in the Trending class. This takes care of
+    all the image processing"""
     calibrator = ImageCalibrator()
+    os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
+    f = open("result{}.txt".format(startingNumber), "a")
+    f.truncate(0)
+    f.close()
     for i, fileName in enumerate(indexFileNameList):
         i += startingNumber
         # goes over all the images allocated to the thread
@@ -52,7 +57,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         TH.isolate(outputDataRootPath, imageData)
 
         # Calibrates RGB and thresholded image
-        calibratedImages = calibrator.calibrateImage(imageData.img, imageData.filledThresholdedImage, calibrationValues)
+        calibratedImages = calibrator.calibrateImage(imageData.img, imageData.seperatedThresholdedImage, calibrationValues)
         imageData.setCalibratedImages(calibratedImages[0], calibratedImages[1])
 
         # Runs and saves output from SizeFinder
@@ -75,11 +80,11 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         f.close
 
 
-class thredding:
-    "This Class handles thredding and load balencing"
+class threading:
+    """This Class handles threading and load balancing"""
 
     def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gausClassifier):
-        """Creates the thredding class and creates the processes based on the given params.
+        """Creates the threading class and creates the processes based on the given params.
         Runs the calibration for the group before distributing the individual images to threads."""
         # Get the calibration values for the group
         calibrator = ImageCalibrator()
@@ -112,7 +117,7 @@ class thredding:
                 i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
 
     def start(self):
-        "Starts the processes initialized in the class"
+        """Starts the processes initialized in the class"""
         for element in self.process:
             element.start()
 
@@ -120,8 +125,8 @@ class thredding:
             element.join()
 
 
-def logikHandle(pathInputRoot, groups):
-    # For timing the prosessings runtime. Not critical for function
+def logicHandle(pathInputRoot, groups):
+    # For timing the pressings runtime. Not critical for function
     startTime = time.time()
     
     clf = Classifier()
@@ -141,8 +146,8 @@ def logikHandle(pathInputRoot, groups):
         
         imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
 
-        # An object containing all the threadded image prosessing tasks
-        process = thredding(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gaussianClassifer)
+        # An object containing all the threaded image processing tasks
+        process = threading(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gaussianClassifer)
 
         process.start()
 
@@ -150,6 +155,6 @@ def logikHandle(pathInputRoot, groups):
     print("TIME:", str(startTime - time.time()))
 
 
-def logikStart(pathInputRoot, groups):
-    logik = mp.Process(target=logikHandle, args=(pathInputRoot, groups))
-    logik.start()
+def logicStart(pathInputRoot, groups):
+    logic = mp.Process(target=logicHandle, args=(pathInputRoot, groups))
+    logic.start()

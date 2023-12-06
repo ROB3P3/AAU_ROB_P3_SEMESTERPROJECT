@@ -3,7 +3,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import f1_score
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pandas as pd
 import math
 import cv2
@@ -16,6 +16,14 @@ class Classifier:
         """Create a list of features for each fish from feature arrays"""
         fishFeatures = []
         for i in range(len(lengthArray)):
+            print("Fish", i + 1, "of", len(lengthArray))
+            test1 = lengthArray[i]
+            test2 = widthArray[i]
+            test3 = areaArray[i]
+            test4 = hsvArray[i][0]
+            test5 = hsvArray[i][1]
+            test6 = hsvArray[i][2]
+
             fishData = [lengthArray[i], widthArray[i], areaArray[i], hsvArray[i][0], hsvArray[i][1], hsvArray[i][2]]
             fishFeatures.append(fishData)
         return fishFeatures

@@ -3,9 +3,9 @@ import open3d as o3d
 import json
 
 class ImageData:
-    "Class for handelign the data needed for each image"
+    """Class for handelign the data needed for each image"""
     def __init__(self, imagePath, index, group):
-        "initialized with a path and an index"
+        """initialized with a path and an index"""
         self.index = index
         self.group = group
         self.imagePath = imagePath
@@ -21,18 +21,18 @@ class ImageData:
             self.intrinsics = json.load(file)
 
     def setCropper(self, cropper):
-        "Sets and execute the auto cropping on the Image"
+        """Sets and execute the auto cropping on the Image"""
         self.cropper = cropper
         self.cropper.setImage(self.imgGray)
         self.cropper.crop()
         self.cropedImage = cropper.imgCropped
 
     def setColourThresholdedImage(self, image):
-        " Set the binary image wich represent the color threshold applied to the original PNG"
+        """ Set the binary image wich represent the color threshold applied to the original PNG"""
         self.colourThrsholdedImage = image
     
     def setDepthThresholding(self, image):
-        " Set the image wich represents the original"
+        """ Set the image wich represents the original"""
         self.depthThresholding = image
 
     def setRawThresholdedImage(self, image):
@@ -54,16 +54,16 @@ class ImageData:
         self.calibratedRGBImage = imageRGB
         self.calibratedThresholdedImage = imageThresholded
 
-    def setAtributesFromSizeFinder(self, sizeRreturnList):
-        self.fishLenghts = sizeRreturnList[0]
-        self.fishOrientations = sizeRreturnList[1]
-        self.annotatedImage = sizeRreturnList[2]
-        self.boundingBoxImage = sizeRreturnList[3]
-        self.averagePoints = sizeRreturnList[4]
-        self.separateContours = sizeRreturnList[5]
-        self.extremePointList1 = sizeRreturnList[6]
-        self.extremePointList2 = sizeRreturnList[7]
-        self.fishAreas = sizeRreturnList[8]
+    def setAtributesFromSizeFinder(self, sizeReturnList):
+        self.fishLenghts = sizeReturnList[0]
+        self.fishOrientations = sizeReturnList[1]
+        self.annotatedImage = sizeReturnList[2]
+        self.boundingBoxImage = sizeReturnList[3]
+        self.averagePoints = sizeReturnList[4]
+        self.separateContours = sizeReturnList[5]
+        self.extremePointList1 = sizeReturnList[6]
+        self.extremePointList2 = sizeReturnList[7]
+        self.fishAreas = sizeReturnList[8]
     
     def setAttributesFromGrippingPoints(self, gPointsOutput):
         self.fishGrippingPoints = gPointsOutput[0]

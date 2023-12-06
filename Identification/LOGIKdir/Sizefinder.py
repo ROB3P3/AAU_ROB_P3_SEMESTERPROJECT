@@ -53,12 +53,6 @@ class SizeFinder:
         for contour in contours:
             averagePoint = []
 
-
-            # Get all pixel positions in contour to calculate average point
-            extracted = np.zeros((y, x), np.uint8)
-            extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            # self.showImage([extracted])
-
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
@@ -127,8 +121,8 @@ class SizeFinder:
 
             # Get area of bounded contour
             area = cv2.contourArea(boundedContours[0])
-            properties.append([fishID, area])
-
+            areas.append(area)
+            properties.append(fishID)
 
             # Calculate the average x and y values to get the average point in the blob
             averagePointX = round(sum(xPixelValues) / len(xPixelValues))
@@ -157,9 +151,11 @@ class SizeFinder:
 
         return properties, positions, separateContours, areas
 
-    def findSize(self, imageData):
+    def findSize(self, imageData):  # image, imageOriginal): #
         """Function to find the area and lenght of a fish(blob). image -> binary"""
         image = imageData.calibratedThresholdedImage
+        imageBlobUncalibrated = imageData.seperatedThresholdedImage
+        imageOriginal = imageData.img
 
         fishLenght = []
         fishOrientation = []
@@ -187,11 +183,35 @@ class SizeFinder:
         sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
         sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
 
+        contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
+        sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
+
         y = image.shape[0]
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
         contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
         blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
+
+        yUncalibrated = imageOriginal.shape[0]
+        xUncalibrated = imageOriginal.shape[1]
+        blobsDataUncalibrated, positionsUncalibrated, separateContoursUncalibrated, fishAreasUncalibrated = self.blobProperties(
+            sortedContoursUncalibrated, yUncalibrated, xUncalibrated)
+
+        for fishID in blobsDataUncalibrated:
+            # Points for the uncalibrated blob image
+            # averagePointUncalibrated = positionsUncalibrated[i][4]
+            extremePointLeftUncalibrated = positionsUncalibrated[i][0]
+            extremePointRightUncalibrated = positionsUncalibrated[i][1]
+            extremePointTopUncalibrated = positionsUncalibrated[i][2]
+            extremePointBottomUncalibrated = positionsUncalibrated[i][3]
+            extremePointListUncalibrated = [extremePointLeftUncalibrated, extremePointRightUncalibrated,
+                                            extremePointTopUncalibrated, extremePointBottomUncalibrated]
+
+            originalImage = cv2.rectangle(imageOriginal,
+                                          [extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]],
+                                          [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]],
+                                          colours[i], 2)
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
@@ -199,6 +219,7 @@ class SizeFinder:
             imagePlot = np.zeros((y, x), np.uint8)
             imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
 
+            # Points for the calibrated blob image
             averagePoint = positions[i][4]
             extremePointLeft = positions[i][0]
             extremePointRight = positions[i][1]
@@ -206,8 +227,7 @@ class SizeFinder:
             extremePointBottom = positions[i][3]
             extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
 
-            originalImage = cv2.rectangle(imageData.img, [extremePointLeft[0], extremePointTop[1]],
-                                          [extremePointRight[0], extremePointBottom[1]], colours[i], 2)
+
 
             cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
@@ -281,8 +301,8 @@ class SizeFinder:
                         (255, 255, 255), 1, cv2.LINE_AA)
 
             # Label blobs
-            #fishText = "Fish" + str(fishID[0])
-            fishText = str(round(blobsData[i][1]))
+            fishText = "Fish" + str(fishID)
+            # fishText = str(round(blobsData[i]))
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 0), 4, cv2.LINE_AA)
             cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -308,10 +328,10 @@ class SizeFinder:
             imagePlotAll = cv2.add(imagePlotAll, imagePlot)
 
         # print(fishLenght)
-        #self.showImage([imagePlotAll])
+        # self.showImage([imagePlotAll])
         # Get amount of files in C:/FishProject/group_4/output/Size/
-        #numberOfFiles = len(glob.glob("C:/FishProject/group_4/output/Size/*.png"))+1
-        imagePath = imageData.imagePath
-        name = imagePath.rsplit('\\', 1)[-1]
-        cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContours, extremePoint1List, extremePoint2List
+        # numberOfFiles = len(glob.glob("C:/FishProject/group_4/output/Size/*.png"))+1
+        # imagePath = imageData.imagePath
+        # name = imagePath.rsplit('\\', 1)[-1]
+        # cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas
