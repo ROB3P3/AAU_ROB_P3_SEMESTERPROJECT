@@ -248,7 +248,7 @@ class Thresholder:
         # fill holes in the raw thresholded image
         imageData.setFilledThresholdedImage(self.fillHoles(imageData.rawThresholdedImage))
 
-        # 
+        # find edges in the raw thresholded image
         imageData.setImageEdges(self.findEdge(imageData.img))
 
         imageData.setSeperatedThresholdedImage(self.seperate(imageData.filledThresholdedImage, imageData.imageEdges))
