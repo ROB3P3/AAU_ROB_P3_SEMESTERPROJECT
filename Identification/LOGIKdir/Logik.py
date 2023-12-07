@@ -35,6 +35,8 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/THSum".format(rootPath, group))
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/Results corrected".format(rootPath, group)):
+        os.makedirs("{}/group_{}/Results corrected".format(rootPath, group))
 
 
 def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints,
@@ -93,7 +95,13 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             
             csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv"]
             collectedFishOutput = classifierClass.createFishDictionary(imageData)
-            with open("result{}.csv".format(imageData.index), "w", newline='') as file:
+            with open("result{}.csv".format(str(imageData.index).zfill(5)), "w", newline='') as file:
+                csvDictWriter = csv.DictWriter(file, csvHeader)
+                csvDictWriter.writeheader()
+                csvDictWriter.writerows(collectedFishOutput)
+
+            os.chdir("{}/group_{}/Results corrected".format(outputDataRootPath, group))
+            with open("result{}corrected.csv".format(str(imageData.index).zfill(5)), "w", newline='') as file:
                 csvDictWriter = csv.DictWriter(file, csvHeader)
                 csvDictWriter.writeheader()
                 csvDictWriter.writerows(collectedFishOutput)

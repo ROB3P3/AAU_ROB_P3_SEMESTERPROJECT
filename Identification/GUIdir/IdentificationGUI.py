@@ -79,8 +79,8 @@ class StartPage(Frame):
             relx=0.5, rely=0.90, anchor=CENTER)
 
         # Label underneath connectButton to indicate isConnected, change when connectButton is pressed.
-        self.connectionLabel = Label(self, font=("Arial", "15"), text="Not connected", bg="royalblue2", fg="black")
-        self.connectionLabel.place(relx=0.8, rely=0.26, anchor=CENTER)
+        """self.connectionLabel = Label(self, font=("Arial", "15"), text="Not connected", bg="royalblue2", fg="black")
+        self.connectionLabel.place(relx=0.8, rely=0.26, anchor=CENTER)"""
 
         # Label underneath pathButton to indicate isConnected, change when pathButton is pressed.
         self.pathLabel = Label(self, font=("Arial", "15"), text="Not valid", bg="royalblue2", fg="black")
@@ -91,7 +91,7 @@ class StartPage(Frame):
         self.pathStatus.place(relx=0.5, rely=0.46, anchor=CENTER)
 
         # port and IP text variable which will be actively validated in checkPortInput()
-        self.IPValue = StringVar()
+        """self.IPValue = StringVar()
         self.IPValue.trace('w', self.checkIPInput)
         self.portValue = StringVar()
         self.portValue.trace('w', self.checkPortInput)
@@ -108,7 +108,7 @@ class StartPage(Frame):
         self.portField.insert(tk.END, "3306")
         self.connectButton = Button(self, text="Connect", command=lambda: self.checkConnection(), font=("Arial", "20"),
                                     bg="black", fg="white")
-        self.connectButton.place(relx=0.8, rely=0.2, anchor=CENTER)
+        self.connectButton.place(relx=0.8, rely=0.2, anchor=CENTER)"""
 
         # Path address and check
         self.pathValue = StringVar()
@@ -123,10 +123,10 @@ class StartPage(Frame):
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
 
         # Labels to indicate function of widget
-        self.IPlabel = Label(self, font=("Arial", "25"), text="IP:", bg="royalblue2", fg="black")
+        """self.IPlabel = Label(self, font=("Arial", "25"), text="IP:", bg="royalblue2", fg="black")
         self.IPlabel.place(relx=0.15, rely=0.20, anchor=CENTER)
         self.portlabel = Label(self, font=("Arial", "25"), text="Port:", bg="royalblue2", fg="black")
-        self.portlabel.place(relx=0.5, rely=0.20, anchor=CENTER)
+        self.portlabel.place(relx=0.5, rely=0.20, anchor=CENTER)"""
         self.pathlabel = Button(self, font=("Arial", "25"), text="Path to root:", bg="royalblue2", fg="black",
                                 command=lambda: self.askForPath())
         self.pathlabel.place(relx=0.11, rely=0.4, anchor=CENTER)
@@ -134,8 +134,8 @@ class StartPage(Frame):
     def checkPathInput(self, *args):
         """Reacts if pathField has been modified."""
         self.modifiedEntry = True
-        self.pathLabel.config(text="Invalid")
-        self.pathStatus.config(text="Path modified")
+        #self.pathLabel.config(text="Invalid")
+        #self.pathStatus.config(text="Path modified")
         print("Entry modified? ", self.modifiedEntry)
 
     def askForPath(self):
@@ -319,10 +319,10 @@ class StartPage(Frame):
     def start(self):
         """Goes to group selection page if path and connection are valid."""
         print("Entry modified? ", self.modifiedEntry)
-        if self.pathReady and self.connectionReady and not self.modifiedEntry:
+        if self.pathReady and not self.modifiedEntry:
             # Check for tables named table_x in the mySQL database, and modify tableName to be one higher than the
             # highest table number. UNCOMMENT BELOW LATER
-            while True:
+            """while True:
                 if (self.tableName,) in self.Database.pullall():
                     self.tableName = self.tableName[:-1] + str(int(self.tableName[-1]) + 1)
                     print("Table name already exists, changing to {}".format(self.tableName))
@@ -333,7 +333,7 @@ class StartPage(Frame):
             # Create table in mySQL database
             print("Creating table")
             self.Database.createTable(self.tableName)
-            print(self.Database.pullall())
+            print(self.Database.pullall())"""
 
             print("Group selection")
             self.controller.frames["PageOne"].insertGroups(self.groupFolders)

@@ -236,7 +236,7 @@ class SizeFinder:
         blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
 
         contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
+        sortedConhotoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
         #sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
         blobsDataUncalibrated, positionsUncalibrated, separateContoursUncalibrated, fishAreasUncalibrated = self.blobProperties(
             sortedContoursUncalibrated, yUncalibrated, xUncalibrated)
@@ -334,7 +334,7 @@ class SizeFinder:
                                      (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
 
             # calculate total pixel lenght of fish.
-            totalLenght = float(sum(sorted(lenghts)[2:]))
+            totalLenght = round(float(sum(sorted(lenghts)[2:])))
 
             # Plot lines to extreme points, and mark the lines chosen.
             cv2.line(imagePlot, averagePoint, extremePointLeft, lineColor, 2)
