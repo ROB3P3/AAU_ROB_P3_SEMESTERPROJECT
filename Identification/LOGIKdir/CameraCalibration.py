@@ -136,49 +136,62 @@ class ImageCalibrator:
     def calibrateImage(self, imageData, calibrationValues):
         """Apllies the calibration values found in getImageCalibration() to the images in the group"""
         imageRGB, imageBlobs = imageData.img.copy(), imageData.seperatedThresholdedImage.copy()
+        seperateBlobs = []
+        seperateBlobsUncalibrated = []
 
-        #cv2.imshow("Blob before sorting", imageBlobs)
+        # Get warp matrix to perspective transform the images.
+        warpMatrix = self.WarpPerspective(imageRGB)
+        retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
+        # Crop image to region of interest
+        x, y, width, height = regionsOfInterest
+
+        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
 
         contours = cv2.findContours(imageBlobs, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         # remove all contours whose area is smaller than 5000 pixels in area
         sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
         # Get shape of imageBlobs
-        blankImage = np.zeros(imageBlobs.shape, np.uint8)
-        imageBlobs = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
+        for contour in sortedContours:
+            blankImage = np.zeros(imageBlobs.shape, np.uint8)
+            imageBlobs = cv2.drawContours(blankImage, contour, -1, 255, -1)
+            self.showImage([imageBlobs])
 
-        #imageBlobs = cv2.erode(imageBlobs, np.ones((3, 3), np.uint8), iterations=1)
-        imageBlobs = cv2.dilate(imageBlobs, np.ones((3, 3), np.uint8), iterations=1)
-        #cv2.imshow("Blob after sorting", imageBlobs)
+            #imageBlobs = cv2.erode(imageBlobs, np.ones((3, 3), np.uint8), iterations=1)
+            imageBlobs = cv2.dilate(imageBlobs, np.ones((3, 3), np.uint8), iterations=1)
+            #cv2.imshow("Blob after sorting", imageBlobs)
 
-        retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
-        # Get warp matrix to perspective transform the images.
-        warpMatrix = self.WarpPerspective(imageRGB)
-        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
 
-        #cv2.imshow("Blob before warp", imageBlobs)
-        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
-        #cv2.imshow("Blob after warp", imageBlobs)
-        #cv2.waitKey(0)
 
-        # Calibrate the warped image of fish.
-        #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
+
+            #cv2.imshow("Blob before warp", imageBlobs)
+            imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+            #cv2.imshow("Blob after warp", imageBlobs)
+            #cv2.waitKey(0)
+
+            # Calibrate the warped image of fish.
+            #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
+
+            imageBlobsUndistorted = cv2.undistort(imageBlobsWarped, matrix, distortion, None, newCameraMatrix)
+
+
+
+            imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
+            ret, imageBlobsUndistorted = cv2.threshold(imageBlobsUndistorted, 20, 255, 0)
+            #cv2.imshow("Blob after undistort", imageBlobsUndistorted)
+            #cv2.waitKey(0)
+            imageContoursUndistorted = cv2.findContours(imageBlobsUndistorted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+            seperateBlobs.append(imageContoursUndistorted)
+            imageContours = cv2.findContours(imageBlobs, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+            seperateBlobsUncalibrated.append(imageContours)
         imageRGBUndistorted = cv2.undistort(imageRGB, matrix, distortion, None, newCameraMatrix)
-        imageBlobsUndistorted = cv2.undistort(imageBlobsWarped, matrix, distortion, None, newCameraMatrix)
-
-        # Crop image to region of interest
-        x, y, width, height = regionsOfInterest
         imageRGBUndistorted = imageRGBUndistorted[y:y + height, x:x + width]
-        imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
-        ret, imageBlobsUndistorted = cv2.threshold(imageBlobsUndistorted, 1, 255, 0)
-        #cv2.imshow("Blob after undistort", imageBlobsUndistorted)
-        #cv2.waitKey(0)
 
         #self.showImage([imageBlobs, imageBlobsUndistorted])
         # newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
         # print("Writing to: ", newFileName)
         # cv2.imwrite(newFileName, imageUndistorted)
         #self.showImage([imageBlobsUndistorted, imageBlobs])
-        return [imageRGBUndistorted, imageBlobsUndistorted, imageBlobs]
+        return [imageRGBUndistorted, seperateBlobs, seperateBlobsUncalibrated]
 
 
 """if __name__ == "__main__":

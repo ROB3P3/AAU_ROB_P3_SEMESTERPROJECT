@@ -46,7 +46,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
     # goes over all the images allocated to the thread
     for i, fileName in enumerate(indexFileNameList):
         i += startingNumber
-        if i not in ignoreList:
+        if i not in ignoreList and i == 41:
             # extract name of image
             name = fileName.rsplit('\\', 1)[-1]
             name = name.split(".")[0]
@@ -171,14 +171,12 @@ def logicHandle(pathInputRoot, groups):
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))[:45]
         calibrationImages = glob.glob("{}/group_{}/calibration/rs/*.png".format(pathInputRoot, group))
         outputDataRootPath = "C:/P3OutData/Merged"  # where you want the program to create it's data folders (could be defined in GUI TBD)
-        numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
+        numberOfThreads = 1#mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
         pathingSetup(group, outputDataRootPath)
         
         imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
-
-        imageDataList = [x for x in range(picturesPerGroup)]  # List that containes all the imagData objects of a group
 
         # An object containing all the threaded image processing tasks
         process = threading(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages,

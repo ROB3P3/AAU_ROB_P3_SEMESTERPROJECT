@@ -57,9 +57,9 @@ class SizeFinder:
 
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
-            extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
+            extracted = cv2.drawContours(extracted, contour, -1, 255, -1)
             #if x == 1920:
-            #    self.showImage([extracted])
+            self.showImage([extracted])
 
             # Make a copy of the blobs in RGB to use as a comparison image
             blobsRGB = extracted.copy()
@@ -175,8 +175,8 @@ class SizeFinder:
     def findSize(self, imageData):  # image, imageOriginal): #
         """Function to find the area and lenght of a fish(blob). image -> binary"""
         self.imageData = imageData
-        image = imageData.calibratedThresholdedImage
-        imageBlobUncalibrated = imageData.imageSortedContours
+        sortedContours = imageData.seperateBlobs
+        sortedContoursUncalibrated = imageData.seperateBlobsUncalibrated
         imageOriginal = imageData.img.copy()
 
         fishLenght = []
@@ -199,45 +199,20 @@ class SizeFinder:
         for i in range(len(colours)):
             invertedColors.append((255 - colours[i][0], 255 - colours[i][1], 255 - colours[i][2]))
 
-        # Find contours (blobs) of binary image
-        contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        # remove all contours whose area is smaller than 5000 pixels in area
-        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
-        sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
 
+        # define size of calibrated image
+        y = 1080
+        x = 1080
 
-        y = image.shape[0]
-        x = image.shape[1]
-        blankImage = np.zeros((y, x), np.uint8)
-        image = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
-
-        # erode and dilate to make contours monotonous for convex defects
-        #image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
-        #image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
-        #cv2.imshow("contoursDrawn", contoursDrawn)
 
 
 
         yUncalibrated = imageOriginal.shape[0]
         xUncalibrated = imageOriginal.shape[1]
-        blankImageUncalibrated = np.zeros((yUncalibrated, xUncalibrated), np.uint8)
-        imageBlobUncalibrated = cv2.drawContours(blankImageUncalibrated, sortedContoursUncalibrated, -1, 255, -1)
-        #imageBlobUncalibrated = cv2.erode(contoursDrawnUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
-        #imageBlobUncalibrated = cv2.dilate(imageBlobUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
-        #cv2.imshow("contoursDrawnUncalibrated", contoursDrawnUncalibrated)
-        #cv2.waitKey(0)
 
-        # Find contours (blobs) of binary image
-        contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        # remove all contours whose area is smaller than 5000 pixels
-        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
-        #sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
+
         blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
 
-        contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
-        #sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
         blobsDataUncalibrated, positionsUncalibrated, separateContoursUncalibrated, fishAreasUncalibrated = self.blobProperties(
             sortedContoursUncalibrated, yUncalibrated, xUncalibrated)
 
