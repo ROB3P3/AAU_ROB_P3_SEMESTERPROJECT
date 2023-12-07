@@ -2,7 +2,9 @@ import numpy as np
 import cv2
 import glob
 import os
-from LOGIKdir.AutoCrop import Cropper as AutoCrop
+#from LOGIKdir.AutoCrop import Cropper as AutoCrop
+from Identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
+from Identification.LOGIKdir.Sizefinder import SizeFinder
 
 
 class ImageCalibrator:
@@ -48,7 +50,7 @@ class ImageCalibrator:
         # Use the values from above to warp the image to a 1080x1080 pixel image.
         return warpMatrix
 
-    def getImageCalibration(self, images):
+    def getImageCalibration(self, calibrationPath):
         """Gets the values required for undistorting an image based on checkerboards in multiple images."""
         # termination criteria
         # Define the dimensions of checkerboard
@@ -68,8 +70,8 @@ class ImageCalibrator:
         objectPoints3D = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
         objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
-        print("Finding checkerboards in images...", images)
-        for fileName in images:
+        print("Finding checkerboards in images...", calibrationPath)
+        for fileName in calibrationPath:
             name = fileName.rsplit('\\', 1)[-1]
             image = cv2.imread(fileName)
 
@@ -77,7 +79,7 @@ class ImageCalibrator:
             warpMatrix = self.WarpPerspective(image, name)
             image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
 
-            print("Finding Checkerboards for {}.".format(name))
+            print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
             grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             #grayColor = image
@@ -98,7 +100,7 @@ class ImageCalibrator:
                 points2D.append(corners2)
 
                 # Draw and display the corners
-                imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
+                # imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
                 # showImage([imageDrawn])
             else:
                 print("Can't find enough corners in {}.".format(name))
@@ -142,60 +144,45 @@ class ImageCalibrator:
 
 
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
-        """for fileName in fishImages:
-            name = fileName.rsplit('\\', 1)[-1]
-            image = cv2.imread(fileName)
-    
-            # Warp perspective on the fish images.
-            image = WarpPerspective(image, name)
-    
-            # Calibrate the warped image of fish.
-            print("Calibrating {} image {}.".format(fishPath.rsplit("/", 1)[-2], name))
-            imageUndistorted = cv2.undistort(image, matrix, distortion, None, newCameraMatrix)
-    
-            # Crop image to region of interest
-            x, y, width, height = regionsOfInterest
-            imageUndistorted = imageUndistorted[y:y + height, x:x + width]
-    
-            # showImage([imageUndistorted])
-            newFileName = outputPathFish.format("calibrated" + fileName.rsplit('\\', 1)[-1])
-    
-            cv2.imwrite(newFileName, imageUndistorted)"""
-
-        # Write all calibration images to the output folder
-        #name = imagePath.rsplit('\\', 1)[-1]
-        #image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
-
         # Get warp matrix to perspective transform the images.
         warpMatrix = self.WarpPerspective(imageRGB)
         imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
-        imageBlobs = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+
+        #cv2.imshow("Blob before warp", imageBlobs)
+        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+        #cv2.imshow("Blob after warp", imageBlobs)
+        #cv2.waitKey(0)
 
         # Calibrate the warped image of fish.
         #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
         imageRGBUndistorted = cv2.undistort(imageRGB, matrix, distortion, None, newCameraMatrix)
-        imageBlobsUndistorted = cv2.undistort(imageBlobs, matrix, distortion, None, newCameraMatrix)
+        imageBlobsUndistorted = cv2.undistort(imageBlobsWarped, matrix, distortion, None, newCameraMatrix)
 
         # Crop image to region of interest
         x, y, width, height = regionsOfInterest
         imageRGBUndistorted = imageRGBUndistorted[y:y + height, x:x + width]
         imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
+        ret, imageBlobsUndistorted = cv2.threshold(imageBlobsUndistorted, 200, 255, 0)
 
-        # showImage([imageUndistorted])
+        #self.showImage([imageBlobs, imageBlobsUndistorted])
         # newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
         # print("Writing to: ", newFileName)
         # cv2.imwrite(newFileName, imageUndistorted)
 
-        return imageRGBUndistorted, imageBlobsUndistorted
+        return [imageRGBUndistorted, imageBlobsUndistorted]
 
 
 """if __name__ == "__main__":
-    groups = [4, 9, 15, 19]
-
+    groups = [4]#, 9, 15, 19]
+    calibrator = ImageCalibrator()
+    sizeFinder = SizeFinder()
     for group in groups:
         print("Running calibration for group {}".format(group))
-        mainPath = "C:/FishProject/group_{}/"
-        outputPath = "C:/FishProject/group_{}/output/"
-        calibration = getImageCalibration(mainPath.format(group))
-        calibrateImage(calibration, mainPath.format(group), outputPath.format(group))
+        imageBlobs = cv2.imread(r"C:\P3OutData\Merged\group_4\FinalTH\00002Final.png", cv2.IMREAD_UNCHANGED)
+        imageRGB = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
+
+        calibrationImages = glob.glob(r"C:\FishProject\group_4\calibration\rs\*.png")
+        calibration = calibrator.getImageCalibration(calibrationImages)
+        calibrated = calibrator.calibrateImage(imageRGB, imageBlobs, calibration)
+        sizeFinder.findSize(calibrated[1], calibrated[0])
         break"""

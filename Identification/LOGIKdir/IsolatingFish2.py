@@ -39,20 +39,24 @@ class Thresholder:
         # Transposes the points array back to its original shape
         points = np.transpose(points)
         # Divides the x and y values by the z value to convert points form homogeneous coordinates to cartesian coordinates
-        points = points[:, :2] / points[:, 2:]
-        points = points.astype(int)
+        cartesianPoints = points[:, :2] / points[:, 2:]
+        cartesianPoints = cartesianPoints.astype(int)
         
         # Creates an empty image with the same dimensions as the original image
         image = np.zeros((intrinsics.height, intrinsics.width, 3))
+        imageZ = np.zeros((intrinsics.height, intrinsics.width, 1))
+        # Add an imageZ that is the same dimensions but contains the z-values of the points
+        # return this image, and calculate the z-point of the gripping points under GrippingPoints.py
         
         # Sets the color of each pixel to the color of the corresponding point
-        for i in range(points.shape[0]):
-            if 0 <= points[i, 1] < intrinsics.height and 0 <= points[i, 0] < intrinsics.width:
-                image[points[i, 1], points[i, 0]] = colors[i]
-        
+        for i in range(cartesianPoints.shape[0]):
+            if 0 <= cartesianPoints[i, 1] < intrinsics.height and 0 <= cartesianPoints[i, 0] < intrinsics.width:
+                image[cartesianPoints[i, 1], cartesianPoints[i, 0]] = colors[i]
+                imageZ[cartesianPoints[i, 1], cartesianPoints[i, 0]] = points[i, 2]
+                
         # Converts the image to the range [0, 255]
         image = (image * 255).astype('uint8')
-        return image
+        return image, imageZ
 
     def thresholdImageBlue(self, image):
         """Thresholds the image to only show the blue pixels"""
@@ -178,7 +182,7 @@ class Thresholder:
         rgbDepthPointCloud.colors = o3d.utility.Vector3dVector(colorArray)
         
         # Converts the pointcloud to a 2D RGB image, thresholds it to make it binary, and fills the holes
-        image = self.pointCloudToImage(rgbDepthPointCloud, cameraIntrinsics)
+        image, imageZ = self.pointCloudToImage(rgbDepthPointCloud, cameraIntrinsics)
         thresholdedImage = self.thresholdImageBlue(image)
         medianImage = cv2.medianBlur(thresholdedImage, (10*2)+1)
         filledImage = self.fillHoles(medianImage)
@@ -193,7 +197,7 @@ class Thresholder:
         vis.run()
         vis.destroy_window() """
         
-        return filledImage
+        return filledImage, imageZ
 
     #******************************************* END Functions for thresholding **************************************** 
 
@@ -244,34 +248,34 @@ class Thresholder:
         # fill holes in the raw thresholded image
         imageData.setFilledThresholdedImage(self.fillHoles(imageData.rawThresholdedImage))
 
-        # 
+        # find edges in the raw thresholded image
         imageData.setImageEdges(self.findEdge(imageData.img))
 
         imageData.setSeperatedThresholdedImage(self.seperate(imageData.filledThresholdedImage, imageData.imageEdges))
 
         os.chdir("{}/group_{}/THData".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "CP.png", imageData.cropedImage)
-        cv2.imwrite("0000" + str(imageData.index) + "TH.png", imageData.filledThresholdedImage)
-        cv2.imwrite("0000" + str(imageData.index) + "Final.png", imageData.seperatedThresholdedImage)
-        cv2.imwrite("0000" + str(imageData.index) + "Edge.png", imageData.imageEdges)
-        cv2.imwrite("0000" + str(imageData.index) + "ColourTH.png", imageData.colourThrsholdedImage)
-        cv2.imwrite("0000" + str(imageData.index) + "DepthTH.png", imageData.depthThresholding)
+        cv2.imwrite(str(imageData.index).zfill(5) + "CP.png", imageData.cropedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "TH.png", imageData.filledThresholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "Final.png", imageData.seperatedThresholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "Edge.png", imageData.imageEdges)
+        cv2.imwrite(str(imageData.index).zfill(5) + "ColourTH.png", imageData.colourThrsholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "DepthTH.png", imageData.depthThresholding)
 
 
 
 
         os.chdir("{}/group_{}/CP".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "CP.png", imageData.cropedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "CP.png", imageData.cropedImage)
         os.chdir("{}/group_{}/THSum".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "THSum.png", imageData.filledThresholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "THSum.png", imageData.filledThresholdedImage)
         os.chdir("{}/group_{}/FinalTH".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "Final.png", imageData.seperatedThresholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "Final.png", imageData.seperatedThresholdedImage)
         os.chdir("{}/group_{}/Edge".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "Edge.png", imageData.imageEdges)
+        cv2.imwrite(str(imageData.index).zfill(5) + "Edge.png", imageData.imageEdges)
         os.chdir("{}/group_{}/ColourTH".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "ColourTH.png", imageData.colourThrsholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "ColourTH.png", imageData.colourThrsholdedImage)
         os.chdir("{}/group_{}/DepthTH".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "DepthTH.png", imageData.depthThresholding)
+        cv2.imwrite(str(imageData.index).zfill(5) + "DepthTH.png", imageData.depthThresholding)
         os.chdir("{}/group_{}/FinalTH".format(outputDataRootPath, imageData.group))
-        cv2.imwrite("0000" + str(imageData.index) + "Final.png", imageData.seperatedThresholdedImage)
+        cv2.imwrite(str(imageData.index).zfill(5) + "Final.png", imageData.seperatedThresholdedImage)
         return(imageData.seperatedThresholdedImage)

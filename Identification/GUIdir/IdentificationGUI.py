@@ -7,9 +7,9 @@ from tkinter.ttk import Label as ttkLabel
 from mysql.connector.errors import Error, Warning
 from mysql.connector import errorcode
 #from Identification.DATAdir import DatabaseHandler as DatabaseHandler
-import DATAdir.DatabaseHandler as DatabaseHandler
+import Identification.DATAdir.DatabaseHandler as DatabaseHandler
 import os
-import LOGIKdir.Logik as Logik
+import Identification.LOGIKdir.Logik as Logik
 from multiprocessing import freeze_support
 
 
@@ -391,7 +391,7 @@ class PageOne(Frame):
         print(self.controller.frames["StartPage"].path)
         
         #self.controller.show_frame("PageTwo") # here the update progress page is called to display
-        Logik.logikStart(self.controller.frames["StartPage"].path, self.selectedGroups) # strats the Identefikation process on the chosen groups
+        Logik.logicStart(self.controller.frames["StartPage"].path, self.selectedGroups) # strats the Identefikation process on the chosen groups
 
 
 class PageTwo(Frame):
