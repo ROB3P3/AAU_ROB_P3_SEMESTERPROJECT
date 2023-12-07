@@ -47,6 +47,8 @@ class SizeFinder:
         positions = []
         separateContours = []
         areas = []
+        finalBlobs = self.imageData.seperatedThresholdedImage
+        contoursFinal = np.zeros((y, x), np.uint8)
         fishID = 1
 
         # Goes through every blob
@@ -56,7 +58,8 @@ class SizeFinder:
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
-            # self.showImage([extracted])
+            #if x == 1920:
+            #    self.showImage([extracted])
 
             # Make a copy of the blobs in RGB to use as a comparison image
             blobsRGB = extracted.copy()
@@ -69,7 +72,14 @@ class SizeFinder:
             hull = cv2.convexHull(contour, returnPoints=False)
 
             # Find the convexity defects of the contour and use them to draw the convex hull
-            defects = cv2.convexityDefects(contour, hull)
+            try:
+                defects = cv2.convexityDefects(contour, hull)
+            except cv2.error as error:
+                print("In picture: ", self.imageData.imagePath)
+                print("Error in convexity defects:")
+                print(error)
+                continue
+
             for i in range(defects.shape[0]):
                 blackPixels = 0
 
@@ -79,7 +89,7 @@ class SizeFinder:
                 end = tuple(contour[e][0])
                 far = tuple(contour[f][0])
 
-                # Draw a triangle with the start, end, and far points
+                """# Draw a triangle with the start, end, and far points
                 triangle = np.array([start, end, far])
 
                 # Draw that triangle on a blank image and get the pixel positions of the triangle
@@ -90,7 +100,7 @@ class SizeFinder:
                 for j in range(len(xPixelValuesTriangle)):
                     if all(blobsRGB[yPixelValuesTriangle[j]][xPixelValuesTriangle[j]]) == 0:
                         # print("black pixel")
-                        blackPixels += 1
+                        blackPixels += 1"""
                 # print("Percentage of black pixels: ", blackPixels/len(xPixelValuesTriangle))
 
                 # Calculate the lenght of the line from the start to the end point
@@ -98,19 +108,28 @@ class SizeFinder:
 
                 # If the percentage of black pixels in the triangle is greater than 75% and the lenght of the line is greater than 100 pixels
                 # then draw the line from both the start adnd end point to the far point instead of from the start to the end point
-                if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
+                #if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
 
-                    cv2.line(boundedContours, start, far, 255, 2)
-                    cv2.line(boundedContours, end, far, 255, 2)
+                cv2.line(boundedContours, start, far, 255, 2)
+                cv2.line(boundedContours, end, far, 255, 2)
 
-                else:
-                    cv2.line(boundedContours, start, end, 255, 2)
+
+                #else:
+                """cv2.line(boundedContours, start, end, 255, 2)"""
+
 
             # Extract the new bounded contour
             boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
             extractedBounded = np.zeros((y, x), np.uint8)
             extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
+
+            epsilon = 0.1 * cv2.arcLength(contour, True)
+            #approx = cv2.approxPolyDP(contour, epsilon, True)
+            #extracted2 = np.zeros((y, x), np.uint8)
+            #extracted2 = cv2.drawContours(extracted, [approx], -1, 255, -1)
+            #self.showImage([extracted2])
+
             # Get all pixel positions in contour to calculate average point
             yPixelValues, xPixelValues = np.nonzero(extractedBounded)
             # print(yPixelValues, xPixelValues)
@@ -148,14 +167,17 @@ class SizeFinder:
             positions.append([extremeLeft, extremeRight, extremeTop, extremeBottom, averagePoint[0]])
 
             fishID += 1
-
+            cv2.drawContours(contoursFinal, boundedContours, -1, 255, -1)
+        #if x == 1920:
+        #    self.showImage([contoursFinal])
         return properties, positions, separateContours, areas
 
     def findSize(self, imageData):  # image, imageOriginal): #
         """Function to find the area and lenght of a fish(blob). image -> binary"""
+        self.imageData = imageData
         image = imageData.calibratedThresholdedImage
         imageBlobUncalibrated = imageData.seperatedThresholdedImage
-        imageOriginal = imageData.img
+        imageOriginal = imageData.img.copy()
 
         fishLenght = []
         fishOrientation = []
@@ -179,28 +201,52 @@ class SizeFinder:
 
         # Find contours (blobs) of binary image
         contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        # remove all contours whose area is smaller than 5000 pixels
-        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
-        sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
-
         contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        # remove all contours whose area is smaller than 5000 pixels in area
+        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
         sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
-        sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
+
 
         y = image.shape[0]
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
         contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
-        blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
+
+        # erode and dilate to make contours monotonous for convex defects
+        image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
+        image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
+        #cv2.imshow("contoursDrawn", contoursDrawn)
+
+
 
         yUncalibrated = imageOriginal.shape[0]
         xUncalibrated = imageOriginal.shape[1]
+        blankImageUncalibrated = np.zeros((yUncalibrated, xUncalibrated), np.uint8)
+        contoursDrawnUncalibrated = cv2.drawContours(blankImageUncalibrated, sortedContoursUncalibrated, -1, 255, -1)
+        imageBlobUncalibrated = cv2.erode(contoursDrawnUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
+        imageBlobUncalibrated = cv2.dilate(imageBlobUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
+        #cv2.imshow("contoursDrawnUncalibrated", contoursDrawnUncalibrated)
+        #cv2.waitKey(0)
+
+        # Find contours (blobs) of binary image
+        contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        # remove all contours whose area is smaller than 5000 pixels
+        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
+        #sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
+        blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
+
+        contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
+        #sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
         blobsDataUncalibrated, positionsUncalibrated, separateContoursUncalibrated, fishAreasUncalibrated = self.blobProperties(
             sortedContoursUncalibrated, yUncalibrated, xUncalibrated)
 
-        for fishID in blobsDataUncalibrated:
+        imagePlotUncalibrated = np.zeros((yUncalibrated, xUncalibrated), np.uint8)
+        imagePlotUncalibrated = cv2.cvtColor(imagePlotUncalibrated, cv2.COLOR_GRAY2RGB)
+
+        for i in range(len(blobsDataUncalibrated)):
             # Points for the uncalibrated blob image
-            # averagePointUncalibrated = positionsUncalibrated[i][4]
+            averagePointUncalibrated = positionsUncalibrated[i][4]
             extremePointLeftUncalibrated = positionsUncalibrated[i][0]
             extremePointRightUncalibrated = positionsUncalibrated[i][1]
             extremePointTopUncalibrated = positionsUncalibrated[i][2]
@@ -212,6 +258,18 @@ class SizeFinder:
                                           [extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]],
                                           [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]],
                                           colours[i], 2)
+            cv2.drawContours(imagePlotUncalibrated, separateContoursUncalibrated[i], -1, colours[i], -1)
+
+            # Label blobs
+            fishText = "Fish" + str(i+1)
+            # fishText = str(round(blobsData[i]))
+            cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                        (0, 0, 0), 4, cv2.LINE_AA)
+            cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                        invertedColors[i], 1, cv2.LINE_AA)
+
+
+        # self.showImage([blankUncalibrated])
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
@@ -226,8 +284,6 @@ class SizeFinder:
             extremePointTop = positions[i][2]
             extremePointBottom = positions[i][3]
             extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
-
-
 
             cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
 
@@ -334,4 +390,4 @@ class SizeFinder:
         # imagePath = imageData.imagePath
         # name = imagePath.rsplit('\\', 1)[-1]
         # cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated

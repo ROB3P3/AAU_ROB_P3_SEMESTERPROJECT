@@ -36,59 +36,73 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
 
-def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints, classifierClass, gaussianClassifier, calibrationValues):
+def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints,
+                 classifierClass, gaussianClassifier, calibrationValues):
     """This function is the one executed by the individual processes created in the Trending class. This takes care of
     all the image processing"""
     calibrator = ImageCalibrator()
-    os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
-    f = open("result{}.txt".format(startingNumber), "a")
-    f.truncate(0)
-    f.close()
+    ignoreList = [0, 11, 22, 33, 44, 55]
+    # goes over all the images allocated to the thread
     for i, fileName in enumerate(indexFileNameList):
         i += startingNumber
-        # goes over all the images allocated to the thread
+        if i not in ignoreList:
+            # extract name of image
+            name = fileName.rsplit('\\', 1)[-1]
+            name = name.split(".")[0]
 
-        print("now processing image:", fileName)
+            print("now processing image:", fileName, name)
 
-        # init data object for the current image
-        imageData = ImageData(fileName, i + 1, group, )
+            # init data object for the current image
+            imageData = ImageData(fileName, i+1, group, )
 
-        # Thresholds image
-        TH.isolate(outputDataRootPath, imageData)
+            # Thresholds image
+            TH.isolate(outputDataRootPath, imageData)
 
-        # Calibrates RGB and thresholded image
-        calibratedImages = calibrator.calibrateImage(imageData.img, imageData.seperatedThresholdedImage, calibrationValues)
-        imageData.setCalibratedImages(calibratedImages[0], calibratedImages[1])
+            # Calibrates RGB and thresholded image
+            calibratedImages = calibrator.calibrateImage(imageData.img, imageData.seperatedThresholdedImage,
+                                                         calibrationValues)
+            imageData.setCalibratedImages(calibratedImages[0], calibratedImages[1])
 
-        # Runs and saves output from SizeFinder
-        imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
-        imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
-        imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
-        imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
+            # Runs and saves output from SizeFinder
+            imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
+            # Writes Size images and boundingboxes to files
+            os.chdir("{}/group_{}/Size/".format(outputDataRootPath, group))
+            cv2.imwrite("{} Size Calibrated.png".format(name), imageData.annotatedImage)
+            cv2.imwrite("{} OG.png".format(name), imageData.boundingBoxImage)
+            cv2.imwrite("{} Size Uncalibrated.png".format(name), imageData.annotatedImageUncalibrated)
 
-        # Writes Size images and boundingboxes to files
-        os.chdir("{}/group_{}/Size".format(outputDataRootPath, group))
-        cv2.imwrite("size" + str(i + 1) + ".png", imageData.annotatedImage)
-        cv2.imwrite("OG" + str(i + 1) + ".png", imageData.boundingBoxImage)
+            # Classifier starts
+            imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
+            imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
+            imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
 
-        # Writes realevant data for MySql comunication to txt file for future reference
-        os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
-        f = open("result{}.txt".format(startingNumber), "a")
-        f.write(str(imageData.index))
-        f.write(str(imageData.fishSpecies))
-        f.write("\n")
-        f.close
+            # Writes realevant data for MySql comunication to txt file for future reference
+            os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
+            f = open("results group {}.txt".format(group), "a")
+            # clears the file if it is the first image
+            f.write("\n")
+            f.write(str(name))
+            f.write(str(imageData.fishSpecies))
+            f.write("\n")
+            f.close
 
 
 class threading:
     """This Class handles threading and load balancing"""
 
-    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gausClassifier):
+    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages,
+                 gausClassifier):
         """Creates the threading class and creates the processes based on the given params.
         Runs the calibration for the group before distributing the individual images to threads."""
         # Get the calibration values for the group
         calibrator = ImageCalibrator()
         calibrationValues = calibrator.getImageCalibration(calibrationImages)
+
+        # Delete all files in the results folder
+        prevoiusResults = glob.glob("{}/group_{}/Results/*".format(outputDataRootPath, group))
+        for file in prevoiusResults:
+            print("deleting prevous result file:", file)
+            os.remove(file)
 
         # Distributes the images to the threads
         self.process = []
@@ -106,15 +120,19 @@ class threading:
                     indexOffsetEnd += 1
                     Offset -= 1
                 self.process.append(mp.Process(target=taskHandeler, args=(
-                images[1:indexJump + indexOffsetEnd], 1, group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
+                    images[:indexJump + indexOffsetEnd], i, group, outputDataRootPath, Thresholder(), SizeFinder(),
+                    GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
             elif i == numberOfThreads - 1:
                 self.process.append(mp.Process(target=taskHandeler, args=(
-                images[i * indexJump + indexOffsetStart:picturesPerGroup + 1], i * indexJump + indexOffsetStart, group,
-                outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
+                    images[i * indexJump + indexOffsetStart:picturesPerGroup + 1], i * indexJump + indexOffsetStart,
+                    group,
+                    outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier,
+                    calibrationValues)))
             else:
                 self.process.append(mp.Process(target=taskHandeler, args=(
-                images[i * indexJump + indexOffsetStart:(i + 1) * indexJump + indexOffsetEnd],
-                i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(), GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
+                    images[i * indexJump + indexOffsetStart:(i + 1) * indexJump + indexOffsetEnd],
+                    i * indexJump + indexOffsetStart, group, outputDataRootPath, Thresholder(), SizeFinder(),
+                    GrippingPoints(), Classifier(), gausClassifier, calibrationValues)))
 
     def start(self):
         """Starts the processes initialized in the class"""
@@ -128,26 +146,27 @@ class threading:
 def logicHandle(pathInputRoot, groups):
     # For timing the pressings runtime. Not critical for function
     startTime = time.time()
-    
+
     clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv", "./Identification/DATAdir/validation_data.csv")
-    
+    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv",
+                                             "./Identification/DATAdir/validation_data.csv")
 
     for group in groups:
         ########################################### Setup params ##############################################
-        images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))
+        images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))[:45]
         calibrationImages = glob.glob("{}/group_{}/calibration/rs/*.png".format(pathInputRoot, group))
         outputDataRootPath = "C:/P3OutData/Merged"  # where you want the program to create it's data folders (could be defined in GUI TBD)
         numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
-        
+
         pathingSetup(group, outputDataRootPath)
-        
-        imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
+
+        imageDataList = [x for x in range(picturesPerGroup)]  # List that containes all the imagData objects of a group
 
         # An object containing all the threaded image processing tasks
-        process = threading(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gaussianClassifer)
+        process = threading(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages,
+                            gaussianClassifer)
 
         process.start()
 
