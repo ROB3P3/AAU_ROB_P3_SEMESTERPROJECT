@@ -3,6 +3,7 @@ import numpy as np
 import math
 import os
 import multiprocessing as mp
+import csv
 from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
@@ -58,6 +59,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         # Runs and saves output from SizeFinder
         imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
         imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
+        imageData.setZValuesOfPoints(grippingPoints.applyZValues(imageData))
         imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
         imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
 
@@ -66,13 +68,15 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         cv2.imwrite("size" + str(i + 1) + ".png", imageData.annotatedImage)
         cv2.imwrite("OG" + str(i + 1) + ".png", imageData.boundingBoxImage)
 
-        # Writes realevant data for MySql comunication to txt file for future reference
+        # Relevant data is written to a csv file
         os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
-        f = open("result{}.txt".format(startingNumber), "a")
-        f.write(str(imageData.index))
-        f.write(str(imageData.fishSpecies))
-        f.write("\n")
-        f.close
+        
+        csvHeader = ["group id", "image id", "species", "length", "width", "gripping points", "center point", "orientations"]
+        collectedFishOutput = classifierClass.createFishDictionary(imageData)
+        with open("result{}.csv".format(imageData.index), "w", newline='') as file:
+            csvDictWriter = csv.DictWriter(file, csvHeader)
+            csvDictWriter.writeheader()
+            csvDictWriter.writerows(collectedFishOutput)
 
 
 class thredding:
