@@ -1,65 +1,33 @@
 import glob
-
+import os
 import pandas as pd
 
 
-class ReadCSV:
-    def __init__(self) -> None:
-        print("ReadCSV initialized")
 
-    def readCSV(self, path):
-        """Read a csv file and return it as a pandas dataframe"""
-        return pd.read_csv(path)
-
-    def readCSVs(self, paths):
-        """Read a list of csv files and return them as a list of pandas dataframes"""
-        dataframes = []
-        for path in paths:
-            dataframes.append(self.readCSV(path))
-        return dataframes
-
-    def readCSVsAsDict(self, paths):
-        """Read a list of csv files and return them as a dictionary of pandas dataframes"""
-        dataframes = {}
-        for path in paths:
-            dataframes[path] = self.readCSV(path)
-        return dataframes
-
-    def readCSVsAsDictWithNames(self, paths, names):
-        """Read a list of csv files and return them as a dictionary of pandas dataframes with names"""
-        dataframes = {}
-        for i in range(len(paths)):
-            dataframes[names[i]] = self.readCSV(paths[i])
-        return dataframes
-
-    def readCSVsAsDictWithNamesAndGroups(self, paths, names, groups):
-        """Read a list of csv files and return them as a dictionary of pandas dataframes with names and groups"""
-        dataframes = {}
-        for i in range(len(paths)):
-            dataframes[names[i]] = self.readCSV(paths[i])
-            dataframes[names[i]]["group"] = groups[i]
-        return dataframes
-
-    def readCSVsAsDictWithNamesGroupsAndIndexes(self, paths, names, groups, indexes):
-        """Read a list of csv files and return them as a dictionary of pandas dataframes with names, groups and indexes"""
-        dataframes = {}
-        for i in range(len(paths)):
-            dataframes[names[i]] = self.readCSV(paths[i])
-            dataframes[names[i]]["group"] = groups[i]
-            dataframes[names[i]]["index"] = indexes[i]
-        return dataframes
-
-    def readCSVsAsDictWithNamesGroupsIndexesAndSpecies(self, paths, names, groups, indexes, species):
-        """Read a list of csv files and return them as a dictionary of pandas dataframes with names, groups, indexes and species"""
-        dataframes = {}
-        for i in range(len(paths)):
-            dataframes[names[i]] = self.readCSV(paths[i])
 
 
 if __name__ == "__main__":
-    readCSV = ReadCSV()
-    CSVs = glob.glob(r"C:\P3OutData\Merged\group_18\Results corrected\*")
-    for CSV in CSVs:
+    speciesCSV = glob.glob(r"C:\P3OutData\Merged\group_19\Results corrected\*.csv")
+
+    correctedCSV = glob.glob(r"C:\FishProject\18-25\group_19\Results\*.csv")
+    # get the number from the corrected CSV file name.
+    for CSV in correctedCSV:
+        name = CSV.split("\\")[-1]
+        name = name.split(".")[0]
+        # split the number from the name so result10 becomes 10
+        name = name.split("result")[1]
+        name = name.zfill(5)
+        print("result" + name + ".csv")
+        # rename the file to the number
+        os.rename(CSV, r"C:/FishProject/18-25/group_19/Results/result{}.csv".format(name))
+
+    correctedCSV = glob.glob(r"C:\FishProject\18-25\group_19\Results\*.csv")
+    for i, CSV in enumerate(correctedCSV):
         print(CSV)
-        df = readCSV.readCSV(CSV)
-        print(df)
+        corrected = pd.read_csv(CSV)
+        species = pd.read_csv(speciesCSV[i])
+        print("before corrected: \n", corrected["species"])
+        print("correct species: \n", species["species"])
+        corrected["species"] = species["species"]
+        print("after corrected: \n", corrected["species"])
+        corrected.to_csv(CSV, header=True, index=False)
