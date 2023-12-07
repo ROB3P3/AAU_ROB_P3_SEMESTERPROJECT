@@ -15,16 +15,26 @@ class Classifier:
     def createFishDictionary(self, imageData):
         fishOutputDict = []
         for i in range(len(imageData.fishLenghts)):
-            fishDict = {"group id": imageData.group, "image id": imageData.index, "fish index": i+1, "species": imageData.fishSpecies[i], "length": imageData.fishLenghts[i], "width": imageData.fishWidths[i], "area": imageData.fishAreas[i], "gripping points": imageData.fishGrippingPoints[i], "center point": imageData.averagePoints[i], "orientations": imageData.fishOrientations[i], "avg hsv": imageData.fishAverageHSV[i]}
-            fishOutputDict.append(fishDict)
+            print("Fish: ", i+1, " of ", len(imageData.fishLenghts), " in image: ", imageData.imagePath)
+            try:
+                fishDict = {"group id": imageData.group, "image id": imageData.index, "fish index": i+1, "species": imageData.fishSpecies[i], "length": imageData.fishLenghts[i], "width": imageData.fishWidths[i], "area": imageData.fishAreas[i], "gripping points": imageData.fishGrippingPoints[i], "center point": imageData.averagePoints[i], "orientations": imageData.fishOrientations[i], "avg hsv": imageData.fishAverageHSV[i]}
+                fishOutputDict.append(fishDict)
+            except IndexError:
+                print("Dictionary IndexError in: ", imageData.imagePath)
+                break
         return fishOutputDict
     
-    def createFeatures(self, lengthArray, widthArray, areaArray, hsvArray):
+    def createFeatures(self, lengthArray, widthArray, areaArray, hsvArray, imageData):
         """Create a list of features for each fish from feature arrays"""
         fishFeatures = []
         for i in range(len(lengthArray)):
-            fishData = [lengthArray[i], widthArray[i], areaArray[i], hsvArray[i][0], hsvArray[i][1], hsvArray[i][2]]
-            fishFeatures.append(fishData)
+            print("Fish: ", i+1, " of ", len(lengthArray), " in image: ", imageData.imagePath)
+            try:
+                fishData = [lengthArray[i], widthArray[i], areaArray[i], hsvArray[i][0], hsvArray[i][1], hsvArray[i][2]]
+                fishFeatures.append(fishData)
+            except IndexError:
+                print("Feature IndexError in: ", imageData.imagePath)
+                break
         return fishFeatures
     
     def extractFeatures(self, dataArray):
@@ -109,6 +119,6 @@ class Classifier:
 
     def predictSpecies(self, classifier, imageData):
         """Predict the species of a fish based on its features"""
-        fishFeatures = self.createFeatures(imageData.fishLenghts, imageData.fishWidths, imageData.fishAreas, imageData.fishAverageHSV)
+        fishFeatures = self.createFeatures(imageData.fishLenghts, imageData.fishWidths, imageData.fishAreas, imageData.fishAverageHSV, imageData)
         prediction = classifier.predict(fishFeatures)
         return prediction

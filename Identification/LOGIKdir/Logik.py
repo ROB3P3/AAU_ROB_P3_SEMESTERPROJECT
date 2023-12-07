@@ -100,7 +100,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
 
 
-class thredding:
+class threading:
     "This Class handles thredding and load balencing"
 
     def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gausClassifier):
