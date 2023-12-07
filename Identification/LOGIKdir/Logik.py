@@ -71,7 +71,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
         # Relevant data is written to a csv file
         os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
         
-        csvHeader = ["group id", "image id", "species", "length", "width", "gripping points", "center point", "orientations"]
+        csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv"]
         collectedFishOutput = classifierClass.createFishDictionary(imageData)
         with open("result{}.csv".format(imageData.index), "w", newline='') as file:
             csvDictWriter = csv.DictWriter(file, csvHeader)

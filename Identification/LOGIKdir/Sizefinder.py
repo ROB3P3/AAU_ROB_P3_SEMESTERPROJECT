@@ -207,7 +207,8 @@ class SizeFinder:
             extremePointBottom = positions[i][3]
             extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
 
-            originalImage = cv2.rectangle(imageData.img, [extremePointLeft[0], extremePointTop[1]],
+            originalImage = imageData.img.copy()
+            originalImage = cv2.rectangle(originalImage, [extremePointLeft[0], extremePointTop[1]],
                                           [extremePointRight[0], extremePointBottom[1]], colours[i], 2)
 
             cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)

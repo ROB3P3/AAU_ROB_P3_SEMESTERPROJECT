@@ -15,7 +15,7 @@ class Classifier:
     def createFishDictionary(self, imageData):
         fishOutputDict = []
         for i in range(len(imageData.fishLenghts)):
-            fishDict = {"group id": imageData.group, "image id": imageData.index, "species": imageData.fishSpecies[i], "length": imageData.fishLenghts[i], "width": imageData.fishWidths[i], "gripping points": imageData.fishGrippingPoints[i], "center point": imageData.averagePoints[i], "orientations": imageData.fishOrientations[i]}
+            fishDict = {"group id": imageData.group, "image id": imageData.index, "fish index": i+1, "species": imageData.fishSpecies[i], "length": imageData.fishLenghts[i], "width": imageData.fishWidths[i], "area": imageData.fishAreas[i], "gripping points": imageData.fishGrippingPoints[i], "center point": imageData.averagePoints[i], "orientations": imageData.fishOrientations[i], "avg hsv": imageData.fishAverageHSV[i]}
             fishOutputDict.append(fishDict)
         return fishOutputDict
     
@@ -92,6 +92,7 @@ class Classifier:
         """Calculate the average HSV value of each fish by using the contours of the fish"""
         image = imageData.img
         fishContours = imageData.separateContours
+        
         fishAverageHSV = []
         for contour in fishContours:
             # Create an empty image with only the individual contour
