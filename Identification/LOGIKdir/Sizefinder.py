@@ -176,7 +176,7 @@ class SizeFinder:
         """Function to find the area and lenght of a fish(blob). image -> binary"""
         self.imageData = imageData
         image = imageData.calibratedThresholdedImage
-        imageBlobUncalibrated = imageData.seperatedThresholdedImage
+        imageBlobUncalibrated = imageData.imageSortedContours
         imageOriginal = imageData.img.copy()
 
         fishLenght = []
@@ -210,11 +210,11 @@ class SizeFinder:
         y = image.shape[0]
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
-        contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
+        image = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
 
         # erode and dilate to make contours monotonous for convex defects
-        image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
-        image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
+        #image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
+        #image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
         #cv2.imshow("contoursDrawn", contoursDrawn)
 
 
@@ -222,9 +222,9 @@ class SizeFinder:
         yUncalibrated = imageOriginal.shape[0]
         xUncalibrated = imageOriginal.shape[1]
         blankImageUncalibrated = np.zeros((yUncalibrated, xUncalibrated), np.uint8)
-        contoursDrawnUncalibrated = cv2.drawContours(blankImageUncalibrated, sortedContoursUncalibrated, -1, 255, -1)
-        imageBlobUncalibrated = cv2.erode(contoursDrawnUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
-        imageBlobUncalibrated = cv2.dilate(imageBlobUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
+        imageBlobUncalibrated = cv2.drawContours(blankImageUncalibrated, sortedContoursUncalibrated, -1, 255, -1)
+        #imageBlobUncalibrated = cv2.erode(contoursDrawnUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
+        #imageBlobUncalibrated = cv2.dilate(imageBlobUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
         #cv2.imshow("contoursDrawnUncalibrated", contoursDrawnUncalibrated)
         #cv2.waitKey(0)
 
