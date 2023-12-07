@@ -4,6 +4,20 @@ import numpy as np
 class GrippingPoints:
     def __init__(self) -> None:
         print("GrippingPoints initialized")
+        
+    def applyZValues(self, imageData):
+        averagePoints = imageData.averagePoints
+        grippingPoints = imageData.fishGrippingPoints
+        imageZ = imageData.imageWithZValues
+        
+        newAveragePoints = []
+        newGrippingPoints = []
+        for i, point in enumerate(averagePoints):
+            newAveragePoints.append([point[0], point[1], imageZ[point[1]][point[0]][0]])
+            newGrippingPoints.append([[grippingPoints[i][0][0], grippingPoints[i][0][1], imageZ[point[1]][point[0]][0]], [grippingPoints[i][1][0], grippingPoints[i][1][1], imageZ[point[1]][point[0]][0]]])
+        
+        # add this into data.py
+        return newAveragePoints, newGrippingPoints
     
     def calcGrippingPoints(self, imageData):
         """Calculate the grasping points of the fish"""

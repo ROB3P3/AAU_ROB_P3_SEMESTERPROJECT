@@ -28,12 +28,13 @@ class ImageData:
         self.cropedImage = cropper.imgCropped
 
     def setColourThresholdedImage(self, image):
-        """ Set the binary image wich represent the color threshold applied to the original PNG"""
+        "Set the binary image wich represent the color threshold applied to the original PNG"
         self.colourThrsholdedImage = image
     
     def setDepthThresholding(self, image):
-        """ Set the image wich represents the original"""
-        self.depthThresholding = image
+        "Set the image wich represents the original"
+        self.depthThresholding = image[0]
+        self.imageWithZValues = image[1]
 
     def setRawThresholdedImage(self, image):
         self.rawThresholdedImage = image
@@ -69,6 +70,10 @@ class ImageData:
     def setAttributesFromGrippingPoints(self, gPointsOutput):
         self.fishGrippingPoints = gPointsOutput[0]
         self.fishWidths = gPointsOutput[1]
+    
+    def setZValuesOfPoints(self, zValuePointOutput):
+        self.averagePoints = zValuePointOutput[0]
+        self.fishGrippingPoints = zValuePointOutput[1]
     
     def setAverageHSV(self, avgHSVList):
         self.fishAverageHSV = avgHSVList

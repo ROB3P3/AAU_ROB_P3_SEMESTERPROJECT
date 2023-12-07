@@ -3,6 +3,7 @@ import numpy as np
 import math
 import os
 import multiprocessing as mp
+import csv
 from fractions import Fraction
 from LOGIKdir.Sizefinder import SizeFinder
 from LOGIKdir.IsolatingFish2 import Thresholder
@@ -73,6 +74,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
             # Classifier starts
             imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
+            imageData.setZValuesOfPoints(grippingPoints.applyZValues(imageData))
             imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
             imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
 
@@ -85,14 +87,24 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             f.write(str(imageData.fishSpecies))
             f.write("\n")
             f.close
+        
+            # Relevant data is written to a csv file
+            os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
+            
+            csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv"]
+            collectedFishOutput = classifierClass.createFishDictionary(imageData)
+            with open("result{}.csv".format(imageData.index), "w", newline='') as file:
+                csvDictWriter = csv.DictWriter(file, csvHeader)
+                csvDictWriter.writeheader()
+                csvDictWriter.writerows(collectedFishOutput)
 
 
-class threading:
-    """This Class handles threading and load balancing"""
 
-    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages,
-                 gausClassifier):
-        """Creates the threading class and creates the processes based on the given params.
+class thredding:
+    "This Class handles thredding and load balencing"
+
+    def __init__(self, numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages, gausClassifier):
+        """Creates the thredding class and creates the processes based on the given params.
         Runs the calibration for the group before distributing the individual images to threads."""
         # Get the calibration values for the group
         calibrator = ImageCalibrator()
@@ -146,6 +158,10 @@ class threading:
 def logicHandle(pathInputRoot, groups):
     # For timing the pressings runtime. Not critical for function
     startTime = time.time()
+    
+    clf = Classifier()
+    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv", "./Identification/DATAdir/validation_data.csv")
+    
 
     clf = Classifier()
     gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv",
@@ -159,8 +175,9 @@ def logicHandle(pathInputRoot, groups):
         numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
-
         pathingSetup(group, outputDataRootPath)
+        
+        imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
 
         imageDataList = [x for x in range(picturesPerGroup)]  # List that containes all the imagData objects of a group
 
