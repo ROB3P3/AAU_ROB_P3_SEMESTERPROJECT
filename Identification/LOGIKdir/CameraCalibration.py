@@ -77,7 +77,7 @@ class ImageCalibrator:
 
             # Warp perspective of board
             warpMatrix = self.WarpPerspective(image, name)
-            image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
+            image = cv2.warpPerspective(ima inge, warpMatrix, (1080, 1080))
 
             print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
