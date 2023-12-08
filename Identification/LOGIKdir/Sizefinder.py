@@ -273,9 +273,15 @@ class SizeFinder:
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
+
+        imagePlotAllNotAnnotated = np.zeros((y, x), np.uint8)
+        imagePlotAllNotAnnotated = cv2.cvtColor(imagePlotAllNotAnnotated, cv2.COLOR_GRAY2RGB)
         for i, fishID in enumerate(blobsData):
             imagePlot = np.zeros((y, x), np.uint8)
             imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
+
+            imagePlotNotAnnotated = np.zeros((y, x), np.uint8)
+            imagePlotNotAnnotated = cv2.cvtColor(imagePlotNotAnnotated, cv2.COLOR_GRAY2RGB)
 
             # Points for the calibrated blob image
             averagePoint = positions[i][4]
@@ -286,6 +292,7 @@ class SizeFinder:
             extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
 
             cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
+            cv2.drawContours(imagePlotNotAnnotated, separateContours[i], -1, colours[i], -1)
 
             lineColor = [round(255 / 2), round(255 / 2), round(255 / 2)]
 
@@ -382,6 +389,7 @@ class SizeFinder:
             extremePoint1List.append(extremePoint1)
             extremePoint2List.append(extremePoint2)
             imagePlotAll = cv2.add(imagePlotAll, imagePlot)
+            imagePlotAllNotAnnotated = cv2.add(imagePlotAllNotAnnotated, imagePlotNotAnnotated)
 
         # print(fishLenght)
         # self.showImage([imagePlotAll])
@@ -390,4 +398,4 @@ class SizeFinder:
         # imagePath = imageData.imagePath
         # name = imagePath.rsplit('\\', 1)[-1]
         # cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated

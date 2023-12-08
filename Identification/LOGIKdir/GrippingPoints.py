@@ -22,7 +22,7 @@ class GrippingPoints:
     def calcGrippingPoints(self, imageData):
         """Calculate the grasping points of the fish"""
         # Change to use the image with new blobs from Sizefinder
-        image = imageData.seperatedThresholdedImage
+        image = imageData.calibratedNotAnnotatedImage
         extremes1 = imageData.extremePointList1
         extremes2 = imageData.extremePointList2
         centerpoints = imageData.averagePoints
@@ -48,16 +48,24 @@ class GrippingPoints:
             # Increase the length of the perpendicular vector until it hits black in both directions
             # When the vector hits black, the vector has hit the edge of the fish, and this pixel is the gripping point
             vectorIncCounter = 1
-            while np.sum(image[positivePixel[1]][positivePixel[0]]) != 0:
+            try:
+                while np.sum(image[positivePixel[1]][positivePixel[0]]) != 0:
+                    posNormalizedVector = (perpendicularVector / perpendicularLength) * vectorIncCounter
+                    positivePixel = [round(centerpoints[i][0] + posNormalizedVector[0]), round(centerpoints[i][1] + posNormalizedVector[1])]
+                    vectorIncCounter += 1
+            except:
                 posNormalizedVector = (perpendicularVector / perpendicularLength) * vectorIncCounter
                 positivePixel = [round(centerpoints[i][0] + posNormalizedVector[0]), round(centerpoints[i][1] + posNormalizedVector[1])]
-                vectorIncCounter += 1
             
             vectorIncCounter = -1
-            while np.sum(image[negativePixel[1]][negativePixel[0]]) != 0:
+            try:
+                while np.sum(image[negativePixel[1]][negativePixel[0]]) != 0:
+                    negNormalizedVector = (perpendicularVector / perpendicularLength) * vectorIncCounter
+                    negativePixel = [round(centerpoints[i][0] + negNormalizedVector[0]), round(centerpoints[i][1] + negNormalizedVector[1])]
+                    vectorIncCounter -= 1
+            except:
                 negNormalizedVector = (perpendicularVector / perpendicularLength) * vectorIncCounter
                 negativePixel = [round(centerpoints[i][0] + negNormalizedVector[0]), round(centerpoints[i][1] + negNormalizedVector[1])]
-                vectorIncCounter -= 1
 
             # Calculate the width based on the vector between the gripping points
             grippingPoint = [positivePixel, negativePixel]
@@ -66,5 +74,5 @@ class GrippingPoints:
             
             grippingPoints.append(grippingPoint)
             fishWidths.append(width)
-        
+
         return grippingPoints, fishWidths

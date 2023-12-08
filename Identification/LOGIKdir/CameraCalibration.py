@@ -3,8 +3,8 @@ import cv2
 import glob
 import os
 #from LOGIKdir.AutoCrop import Cropper as AutoCrop
-from Identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
-from Identification.LOGIKdir.Sizefinder import SizeFinder
+from LOGIKdir.AutoCrop import Cropper as AutoCrop
+from LOGIKdir.Sizefinder import SizeFinder
 
 
 class ImageCalibrator:

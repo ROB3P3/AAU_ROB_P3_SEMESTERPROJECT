@@ -77,16 +77,6 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             imageData.setZValuesOfPoints(grippingPoints.applyZValues(imageData))
             imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
             imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
-
-            # Writes realevant data for MySql comunication to txt file for future reference
-            os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
-            f = open("results group {}.txt".format(group), "a")
-            # clears the file if it is the first image
-            f.write("\n")
-            f.write(str(name))
-            f.write(str(imageData.fishSpecies))
-            f.write("\n")
-            f.close
         
             # Relevant data is written to a csv file
             os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))

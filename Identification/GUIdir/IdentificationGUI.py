@@ -7,9 +7,9 @@ from tkinter.ttk import Label as ttkLabel
 from mysql.connector.errors import Error, Warning
 from mysql.connector import errorcode
 #from Identification.DATAdir import DatabaseHandler as DatabaseHandler
-import Identification.DATAdir.DatabaseHandler as DatabaseHandler
+import DATAdir.DatabaseHandler as DatabaseHandler
 import os
-import Identification.LOGIKdir.Logik as Logik
+import LOGIKdir.Logik as Logik
 from multiprocessing import freeze_support
 
 
