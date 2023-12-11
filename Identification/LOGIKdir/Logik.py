@@ -83,7 +83,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             
             csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv"]
             collectedFishOutput = classifierClass.createFishDictionary(imageData)
-            with open("result{}.csv".format(imageData.index), "w", newline='') as file:
+            with open("result{}.csv".format(str(imageData.index).zfill(5)), "w", newline='') as file:
                 csvDictWriter = csv.DictWriter(file, csvHeader)
                 csvDictWriter.writeheader()
                 csvDictWriter.writerows(collectedFishOutput)
@@ -148,10 +148,6 @@ class threading:
 def logicHandle(pathInputRoot, groups):
     # For timing the pressings runtime. Not critical for function
     startTime = time.time()
-    
-    clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv", "./Identification/DATAdir/validation_data.csv")
-    
 
     clf = Classifier()
     gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv",
@@ -168,8 +164,6 @@ def logicHandle(pathInputRoot, groups):
         pathingSetup(group, outputDataRootPath)
         
         imageDataList = [x for x in range(picturesPerGroup)] # List that containes all the imagData objects of a group
-
-        imageDataList = [x for x in range(picturesPerGroup)]  # List that containes all the imagData objects of a group
 
         # An object containing all the threaded image processing tasks
         process = threading(numberOfThreads, images, picturesPerGroup, group, outputDataRootPath, calibrationImages,
