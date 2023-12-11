@@ -64,9 +64,9 @@ class Cropper:
                 if self.minx > x0 > 550:
                     #self.imgLines = self.imagePlot.copy()
                     self.minx = x0
-                    cv2.line(self.imgLines, The(x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-        self.showImage([self.imgLines])
+        #self.showImage([self.imgLines])
 
 
 
@@ -97,14 +97,15 @@ class Cropper:
         self.imagePlot = cv2.line(self.imagePlot, (self.xStart, 0), (self.xStart, 1080), (0, 0, 255), 5)
         self.imagePlot = cv2.line(self.imagePlot, (self.xEnd, 0), (self.xEnd, 1080), (0, 0, 255), 5)
         # export the image to downloads
-        os.chdir(r"C:\Users\klump\Downloads")
-        cv2.imwrite("AutoCropOutput.png", self.imagePlot)
-        self.showImage([self.imagePlot])
+        #os.chdir(r"C:\Users\klump\Downloads")
+        #cv2.imwrite("AutoCropOutput.png", self.imagePlot)
+        #self.showImage([self.imagePlot])
 
         return self.minx
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+if False:
     # Test code
     image = cv2.imread(r"C:\FishProject\group_19\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
     imageWarp = image.copy()

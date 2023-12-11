@@ -54,11 +54,11 @@ class ImageCalibrator:
         """Gets the values required for undistorting an image based on checkerboards in multiple images."""
         # termination criteria
         # Define the dimensions of checkerboard
-        CHECKERBOARD = (9, 6)
+        boardShape = (9, 6)
 
-        # The criteria for when to stop iterating, determined either by reaching a certain accuracy (like 0.001) or
-        # when a certain number of iterations have been performed (like 30)
+        #
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        #criteria = (cv2.TERM_CRITERIA_MAX_ITER, 30)
 
         # Vector for 3D points in real world space
         points3D = []
@@ -67,17 +67,21 @@ class ImageCalibrator:
         points2D = []
 
         # Prepares 3D points real world coordinates like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0).
-        objectPoints3D = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
-        objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+        objectPoints3D = np.zeros((boardShape[0] * boardShape[1], 3), np.float32)
+        objectPoints3D[:, :2] = np.mgrid[0:boardShape[0], 0:boardShape[1]].T.reshape(-1, 2)
+
+        print("Preparing objectPoints3D: ", len(objectPoints3D))
 
         print("Finding checkerboards in images...", calibrationPath)
-        for fileName in calibrationPath:
+        for i, fileName in enumerate(calibrationPath):
             name = fileName.rsplit('\\', 1)[-1]
+            name = name.rsplit('.', 1)[0]
             image = cv2.imread(fileName)
 
-            # Warp perspective of board
-            warpMatrix = self.WarpPerspective(image, name)
-            image = cv2.warpPerspective(ima inge, warpMatrix, (1080, 1080))
+            if i == 0:
+                # Warp perspective of board
+                warpMatrix = self.WarpPerspective(image, name)
+            image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
 
             print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
@@ -87,12 +91,13 @@ class ImageCalibrator:
 
             # Find the chess board corners
             # If desired number of corners are found in the image then retval = true
-            retval, corners = cv2.findChessboardCorners(grayColor, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH
+            retval, corners = cv2.findChessboardCorners(grayColor, boardShape, cv2.CALIB_CB_ADAPTIVE_THRESH
                                                         + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
 
             # If desired number of corners are detected, refine the pixel coordinates and display them .
             if retval == True:
                 points3D.append(objectPoints3D)
+                #print("Appended points3D: ", points3D)
 
                 # Refining pixel coordinates for given 2d points.
                 corners2 = cv2.cornerSubPix(grayColor, corners, (11, 11), (-1, -1), criteria)
@@ -100,11 +105,17 @@ class ImageCalibrator:
                 points2D.append(corners2)
 
                 # Draw and display the corners
-                # imageDrawn = cv2.drawChessboardCorners(image, CHECKERBOARD, corners2, retval)
-                # showImage([imageDrawn])
+                imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
+                #self.showImage([imageDrawn])
+                newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
+                print("Writing to: ", newFileName)
+                cv2.imwrite(newFileName, imageDrawn)
+
             else:
                 print("Can't find enough corners in {}.".format(name))
                 # showImage([image])
+
+        print("After objectPoints3D: ", len(points3D), points3D)
 
         # Perform camera calibration by passing the value of above found out 3D points (points3D)
         # and its corresponding pixel coordinates of the detected corners (points2D)
@@ -131,6 +142,13 @@ class ImageCalibrator:
         newCameraMatrix, regionsOfInterest = cv2.getOptimalNewCameraMatrix(matrix, distortion, (width, height), 1,
                                                                            (width, height))
 
+        meanError = 0
+        for i in range(len(points3D)):
+            imgpoints2, _ = cv2.projectPoints(points3D[i], rotationVector[i], translationVector[i], matrix, distortion)
+            error = cv2.norm(points2D[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+            meanError += error
+        print("total error: {}".format(meanError / len(points3D)))
+
         return [retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest]
 
     def calibrateImage(self, imageRGB, imageBlobs, calibrationValues):
@@ -142,21 +160,21 @@ class ImageCalibrator:
         # clearDirectory(outputPathFish.format("*"))
         # clearDirectory(outputPathCalibration.format("*"))
 
-
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
-        # Get warp matrix to perspective transform the images.
-        warpMatrix = self.WarpPerspective(imageRGB)
-        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
-
-        #cv2.imshow("Blob before warp", imageBlobs)
-        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
-        #cv2.imshow("Blob after warp", imageBlobs)
-        #cv2.waitKey(0)
+        # If the shape of the image is 1920x1080, warp the perspective to 1080x1080
+        if imageRGB.shape[0] == 1920 and imageRGB.shape[1] == 1080:
+            # Get warp matrix to perspective transform the images.
+            warpMatrix = self.WarpPerspective(imageRGB)
+            imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
+            imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+        else:
+            imageBlobsWarped = imageBlobs
 
         # Calibrate the warped image of fish.
         #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
         imageRGBUndistorted = cv2.undistort(imageRGB, matrix, distortion, None, newCameraMatrix)
         imageBlobsUndistorted = cv2.undistort(imageBlobsWarped, matrix, distortion, None, newCameraMatrix)
+
 
         # Crop image to region of interest
         x, y, width, height = regionsOfInterest
@@ -169,10 +187,11 @@ class ImageCalibrator:
         # print("Writing to: ", newFileName)
         # cv2.imwrite(newFileName, imageUndistorted)
 
+
         return [imageRGBUndistorted, imageBlobsUndistorted]
 
 
-"""if __name__ == "__main__":
+if __name__ == "__main__":
     groups = [4]#, 9, 15, 19]
     calibrator = ImageCalibrator()
     sizeFinder = SizeFinder()
@@ -183,6 +202,14 @@ class ImageCalibrator:
 
         calibrationImages = glob.glob(r"C:\FishProject\group_4\calibration\rs\*.png")
         calibration = calibrator.getImageCalibration(calibrationImages)
-        calibrated = calibrator.calibrateImage(imageRGB, imageBlobs, calibration)
-        sizeFinder.findSize(calibrated[1], calibrated[0])
-        break"""
+        #calibrated = calibrator.calibrateImage(imageRGB, imageBlobs, calibration)
+        calibrationImagesOutput = glob.glob(r"C:\P3OutData\Example\Checkerboard\*Uncalibrated.png")
+        for image in calibrationImagesOutput:
+            name = image.rsplit('\\', 1)[-1]
+            name = name.rsplit('.', 1)[0]
+            name = name.rsplit('Uncalibrated', 1)[0]
+            print("Calibrating {}".format(name))
+            image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
+            images = calibrator.calibrateImage(image, image, calibration)
+            cv2.imwrite(r"C:\P3OutData\Example\Checkerboard\{}xCalibrated.png".format(name), images[0])
+

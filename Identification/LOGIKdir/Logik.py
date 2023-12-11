@@ -172,7 +172,7 @@ def logicHandle(pathInputRoot, groups):
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))[:45]
         calibrationImages = glob.glob("{}/group_{}/calibration/rs/*.png".format(pathInputRoot, group))
         outputDataRootPath = "C:/P3OutData/Merged"  # where you want the program to create it's data folders (could be defined in GUI TBD)
-        numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
+        numberOfThreads = 1 #mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
         pathingSetup(group, outputDataRootPath)
