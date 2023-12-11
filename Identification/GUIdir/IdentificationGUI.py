@@ -68,8 +68,11 @@ class StartPage(Frame):
 
         self.titleText = Label(self, font=("Arial", "40"), text="Fish Identification", bg="royalblue2", fg="black")
         self.titleText.place(relx=0.5, rely=0.10, anchor=CENTER)
-        self.startButton = Button(self, text="Start", command=lambda: self.start(), font=("Arial", "25"), bg="black", fg="white")
+        self.startButton = Button(self, text="Select Groups", command=lambda: self.start(), font=("Arial", "25"), bg="black", fg="white")
         self.startButton.place(relx=0.5, rely=0.75, anchor=CENTER)
+        # Disable startButton until path is valid
+        self.startButton.config(state=DISABLED)
+
         self.quitButton = Button(self, text="Exit", command=exit, font=("Arial", "20"), bg="black", fg="white")
         self.quitButton.place(relx=0.5, rely=0.90, anchor=CENTER)
 
@@ -104,6 +107,8 @@ class StartPage(Frame):
         self.modifiedEntry = True
         self.pathLabel.config(text="Invalid")
         self.pathStatus.config(text="Path modified")
+        # Disable startButton until path is valid
+        self.startButton.config(state=DISABLED)
         print("Entry modified? ", self.modifiedEntry)
 
     def askForPath(self):
@@ -211,6 +216,8 @@ class StartPage(Frame):
             print("All groups are valid")
             self.pathReady = True
             self.modifiedEntry = False
+            # Enable startButton
+            self.startButton.config(state=NORMAL)
             return True
         else:
             print("Not all groups are valid")
