@@ -58,6 +58,10 @@ class SizeFinder:
             # Get all pixel positions in contour to calculate average point
             extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
+
+            # write the image to file
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Normal".format(fishID), extracted)
+
             #if x == 1920:
             #    self.showImage([extracted])
 
@@ -81,54 +85,28 @@ class SizeFinder:
                 continue
 
             for i in range(defects.shape[0]):
-                blackPixels = 0
-
                 # Get the start, end, and far points of the convexity defect
                 s, e, f, d = defects[i, 0]
                 start = tuple(contour[s][0])
                 end = tuple(contour[e][0])
                 far = tuple(contour[f][0])
 
-                """# Draw a triangle with the start, end, and far points
-                triangle = np.array([start, end, far])
-
-                # Draw that triangle on a blank image and get the pixel positions of the triangle
-                extractedTriangle = np.zeros((y, x), np.uint8)
-                extractedTriangle = cv2.drawContours(extractedTriangle, [triangle], -1, 255, -1)
-                yPixelValuesTriangle, xPixelValuesTriangle = np.nonzero(extractedTriangle)
-                # go through every pixel of the triangle and count the amount of black pixels in the original contour
-                for j in range(len(xPixelValuesTriangle)):
-                    if all(blobsRGB[yPixelValuesTriangle[j]][xPixelValuesTriangle[j]]) == 0:
-                        # print("black pixel")
-                        blackPixels += 1"""
-                # print("Percentage of black pixels: ", blackPixels/len(xPixelValuesTriangle))
 
                 # Calculate the lenght of the line from the start to the end point
                 lenght = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
-                # If the percentage of black pixels in the triangle is greater than 75% and the lenght of the line is greater than 100 pixels
-                # then draw the line from both the start adnd end point to the far point instead of from the start to the end point
-                #if blackPixels / len(xPixelValuesTriangle) > 0.75 and lenght > 100:
 
                 cv2.line(boundedContours, start, far, 255, 2)
                 cv2.line(boundedContours, end, far, 255, 2)
-
-
-                #else:
-                """cv2.line(boundedContours, start, end, 255, 2)"""
-
 
             # Extract the new bounded contour
             boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
             extractedBounded = np.zeros((y, x), np.uint8)
             extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Convex".format(fishID), extractedBounded)
 
-            epsilon = 0.1 * cv2.arcLength(contour, True)
-            #approx = cv2.approxPolyDP(contour, epsilon, True)
-            #extracted2 = np.zeros((y, x), np.uint8)
-            #extracted2 = cv2.drawContours(extracted, [approx], -1, 255, -1)
-            #self.showImage([extracted2])
+            self.showImage([extractedBounded, extracted])
 
             # Get all pixel positions in contour to calculate average point
             yPixelValues, xPixelValues = np.nonzero(extractedBounded)

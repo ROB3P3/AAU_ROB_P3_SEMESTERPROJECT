@@ -39,10 +39,14 @@ class Cropper:
         self.Lines = cv2.HoughLines(self.imgEdges, 1.7, np.pi / 180, 220)
 
 
+        #self.Lines2 = cv2.HoughLinesP(self.imgEdges, 1.7, np.pi / 180, 220)
+
+
         self.minx = 9999
-        for r_theta in self.Lines:
+        for i, r_theta in enumerate(self.Lines):
             arr = np.array(r_theta[0], dtype=np.float64)
             r, theta = arr
+            print("Line", i, "rho:", r, "theta:", theta)
 
             a = np.cos(theta)  # Stores the value of cos(theta) in a
             b = np.sin(theta)  # Stores the value of sin(theta) in b
@@ -104,10 +108,9 @@ class Cropper:
         return self.minx
 
 
-#if __name__ == "__main__":
-if False:
+if __name__ == "__main__":
     # Test code
-    image = cv2.imread(r"C:\FishProject\group_19\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
+    image = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
     imageWarp = image.copy()
     imageThreshold = image.copy()
     AutoCropper = Cropper()
@@ -118,7 +121,7 @@ if False:
     leftX2 = minX + 70
     rightX1 = minX + 1235
     rightX2 = minX + 1270
-    if False:
+    if True:
         imageWarp = cv2.line(imageWarp, (leftX1, 0), (leftX2, 1080), (0, 0, 255), 5)
         imageWarp = cv2.line(imageWarp, (rightX1, 0), (rightX2, 1080), (0, 0, 255), 5)
         # fill the area between the lines with half transparent red
@@ -140,7 +143,7 @@ if False:
         imageThreshold = cv2.addWeighted(overlay, 0.5, imageThreshold, 0.5, 0)
 
         # export the image to downloads
-        os.chdir(r"C:\Users\klump\Downloads")
+        #os.chdir(r"C:\Users\klump\Downloads")
         #cv2.imwrite("test.png", image)
         cv2.imshow("warp", imageWarp)
         cv2.imshow("threshold", imageThreshold)

@@ -70,7 +70,7 @@ class ImageCalibrator:
         objectPoints3D = np.zeros((boardShape[0] * boardShape[1], 3), np.float32)
         objectPoints3D[:, :2] = np.mgrid[0:boardShape[0], 0:boardShape[1]].T.reshape(-1, 2)
 
-        print("Preparing objectPoints3D: ", len(objectPoints3D))
+        print("Preparing objectPoints3D: ", objectPoints3D)
 
         print("Finding checkerboards in images...", calibrationPath)
         for i, fileName in enumerate(calibrationPath):
@@ -115,7 +115,7 @@ class ImageCalibrator:
                 print("Can't find enough corners in {}.".format(name))
                 # showImage([image])
 
-        print("After objectPoints3D: ", len(points3D), points3D)
+        #print("After objectPoints3D: ", len(points3D), points3D)
 
         # Perform camera calibration by passing the value of above found out 3D points (points3D)
         # and its corresponding pixel coordinates of the detected corners (points2D)
