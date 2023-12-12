@@ -66,6 +66,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
             # Runs and saves output from SizeFinder
             imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
+            break
             # Writes Size images and boundingboxes to files
             os.chdir("{}/group_{}/Size/".format(outputDataRootPath, group))
             cv2.imwrite("{} Size Calibrated.png".format(name), imageData.annotatedImage)

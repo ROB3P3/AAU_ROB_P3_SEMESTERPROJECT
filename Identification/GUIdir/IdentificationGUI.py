@@ -4,12 +4,10 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter.ttk import Progressbar
 from tkinter.ttk import Label as ttkLabel
-from mysql.connector.errors import Error, Warning
-from mysql.connector import errorcode
-#from Identification.DATAdir import DatabaseHandler as DatabaseHandler
-import Identification.DATAdir.DatabaseHandler as DatabaseHandler
+# from Identification.DATAdir import DatabaseHandler as DatabaseHandler
+import DATAdir.DatabaseHandler as DatabaseHandler
 import os
-import Identification.LOGIKdir.Logik as Logik
+import LOGIKdir.Logik as Logik
 from multiprocessing import freeze_support
 
 
@@ -56,31 +54,26 @@ class StartPage(Frame):
         self.controller = controller
         self.config(bg="royalblue2")
 
-        self.Database = None
-        self.isConnected = False
         self.pathValid = False
         self.path = None
         self.groupFolders = []
         self.groupAmount = len(self.groupFolders)
         self.pathReady = False
-        self.connectionReady = False
-        self.tableName = "table_1"
 
         # check if entry fields have been modified since last check
         # to prevents user from validating one oath and then changing the path without validating again.
         self.modifiedEntry = False
 
-        self.titleText = Label(self, font=("Arial", "40"), text="Fish Identification", bg="royalblue2",
-                               fg="black").place(relx=0.5, rely=0.10, anchor=CENTER)
-        self.startButton = Button(self, text="Start", command=lambda: self.start(),
-                                  font=("Arial", "25"), bg="black", fg="white").place(relx=0.5, rely=0.75,
-                                                                                      anchor=CENTER)
-        self.quitButton = Button(self, text="Exit", command=exit, font=("Arial", "20"), bg="black", fg="white").place(
-            relx=0.5, rely=0.90, anchor=CENTER)
+        self.titleText = Label(self, font=("Arial", "40"), text="Fish Identification", bg="royalblue2", fg="black")
+        self.titleText.place(relx=0.5, rely=0.10, anchor=CENTER)
+        self.startButton = Button(self, text="Select Groups", command=lambda: self.start(), font=("Arial", "25"),
+                                  bg="black", fg="white")
+        self.startButton.place(relx=0.5, rely=0.75, anchor=CENTER)
+        # Disable startButton until path is valid
+        self.startButton.config(state=DISABLED)
 
-        # Label underneath connectButton to indicate isConnected, change when connectButton is pressed.
-        self.connectionLabel = Label(self, font=("Arial", "15"), text="Not connected", bg="royalblue2", fg="black")
-        self.connectionLabel.place(relx=0.8, rely=0.26, anchor=CENTER)
+        self.quitButton = Button(self, text="Exit", command=exit, font=("Arial", "20"), bg="black", fg="white")
+        self.quitButton.place(relx=0.5, rely=0.90, anchor=CENTER)
 
         # Label underneath pathButton to indicate isConnected, change when pathButton is pressed.
         self.pathLabel = Label(self, font=("Arial", "15"), text="Not valid", bg="royalblue2", fg="black")
@@ -89,26 +82,6 @@ class StartPage(Frame):
         # label underneath pathField to indicate status of path
         self.pathStatus = Label(self, font=("Arial", "15"), text="Enter path", bg="royalblue2", fg="black")
         self.pathStatus.place(relx=0.5, rely=0.46, anchor=CENTER)
-
-        # port and IP text variable which will be actively validated in checkPortInput()
-        self.IPValue = StringVar()
-        self.IPValue.trace('w', self.checkIPInput)
-        self.portValue = StringVar()
-        self.portValue.trace('w', self.checkPortInput)
-
-        # IP address, port, and check
-        self.IPField = Entry(self, font=("Arial", "25"), width=15, bg="white", fg="black", justify='center',
-                             textvariable=self.IPValue)
-        self.IPField.place(relx=0.3, rely=0.20, anchor=CENTER)
-        self.IPField.insert(tk.END, "172.26.50.223")
-        self.portField = Entry(self, font=("Arial", "25"), width=6, bg="white", fg="black", justify='center',
-                               textvariable=self.portValue)
-        self.portField.place(relx=0.6, rely=0.20, anchor=CENTER)
-        # insert test port
-        self.portField.insert(tk.END, "3306")
-        self.connectButton = Button(self, text="Connect", command=lambda: self.checkConnection(), font=("Arial", "20"),
-                                    bg="black", fg="white")
-        self.connectButton.place(relx=0.8, rely=0.2, anchor=CENTER)
 
         # Path address and check
         self.pathValue = StringVar()
@@ -123,10 +96,6 @@ class StartPage(Frame):
         self.pathButton.place(relx=0.85, rely=0.4, anchor=CENTER)
 
         # Labels to indicate function of widget
-        self.IPlabel = Label(self, font=("Arial", "25"), text="IP:", bg="royalblue2", fg="black")
-        self.IPlabel.place(relx=0.15, rely=0.20, anchor=CENTER)
-        self.portlabel = Label(self, font=("Arial", "25"), text="Port:", bg="royalblue2", fg="black")
-        self.portlabel.place(relx=0.5, rely=0.20, anchor=CENTER)
         self.pathlabel = Button(self, font=("Arial", "25"), text="Path to root:", bg="royalblue2", fg="black",
                                 command=lambda: self.askForPath())
         self.pathlabel.place(relx=0.11, rely=0.4, anchor=CENTER)
@@ -136,6 +105,8 @@ class StartPage(Frame):
         self.modifiedEntry = True
         self.pathLabel.config(text="Invalid")
         self.pathStatus.config(text="Path modified")
+        # Disable startButton until path is valid
+        self.startButton.config(state=DISABLED)
         print("Entry modified? ", self.modifiedEntry)
 
     def askForPath(self):
@@ -147,73 +118,6 @@ class StartPage(Frame):
         # clear pathField and insert new path
         self.pathField.delete(0, tk.END)
         self.pathField.insert(tk.END, pathAsk)
-
-    def checkPortInput(self, *args):
-        """Check if portField is less than 4 characters and only contains digits."""
-        value = self.portValue.get()
-        self.modifiedEntry = True
-        self.connectionLabel.config(text="Check again")
-        print("Entry modified? ", self.modifiedEntry)
-        if len(value) > 4:
-            self.portValue.set(value[:4])
-        elif len(value) < 4:
-            for i in range(4 - len(value)):
-                value = value + "0"
-            self.portValue.set(value)
-        if value.isdigit() is False: self.portValue.set(value[:-1])
-
-    def checkIPInput(self, *args):
-        """Check if IPField is formatted as a proper IP address."""
-        value = self.IPValue.get()
-        self.modifiedEntry = True
-        self.connectionLabel.config(text="Check again")
-        print("Entry modified? ", self.modifiedEntry)
-        # check if value is always a digit or a dot.
-        for char in value:
-            if char.isdigit() is False and char != ".":
-                value = value.replace(char, "")
-                self.IPValue.set(value)
-
-        # check if value always contains 4 links.
-        if len(value.rsplit(".", -1)) > 4:
-            self.IPValue.set(value[:-1])
-        elif len(value.rsplit(".", -1)) < 4:
-            for i in range(4 - len(value.rsplit(".", -1))):
-                print(i)
-                value = value + "."
-                self.IPValue.set(value)
-
-        # check if lenght of each link is less than 4 and value is between 0 and 255.
-        splitValue = value.rsplit(".", -1)
-        for i, link in enumerate(splitValue):
-            if len(link) > 0 and link.isdigit() is True:
-                if len(link) > 3 or int(link) > 255:
-                    splitValue[i] = link[:-1]
-                    value = ".".join(splitValue)
-                    self.IPValue.set(value)
-
-    def checkConnection(self):
-        """Check if provided IP and port can connect to a mySQL server"""
-        IPAdress = str(self.IPField.get())
-        port = str(self.portField.get())
-        print("IP: {}, Port: {}".format(IPAdress, port))
-
-        # attempt to connect to mySQL database
-        try:
-            self.Database = DatabaseHandler.Database(IPAdress, port)
-            isConnected = self.Database.connect()
-            self.connectionLabel.config(text="Connected")
-            self.connectionReady = True
-            print("Connection is: ", isConnected)
-            print(self.Database.pullall())
-        except Error as error:
-            self.connectionLabel.config(text="Not connected")
-            self.connectionReady = False
-            print("Error code:", error.errno)  # error number
-            print("Error message:", error.msg)  # error message
-            print("List of error codes:")
-            print(errorcode.CR_CONNECTION_ERROR)
-            print(errorcode.CR_CONN_HOST_ERROR)
 
     def checkPath(self):
         """Check if pathField leads to an existing folder on the local disk."""
@@ -310,6 +214,8 @@ class StartPage(Frame):
             print("All groups are valid")
             self.pathReady = True
             self.modifiedEntry = False
+            # Enable startButton
+            self.startButton.config(state=NORMAL)
             return True
         else:
             print("Not all groups are valid")
@@ -319,22 +225,7 @@ class StartPage(Frame):
     def start(self):
         """Goes to group selection page if path and connection are valid."""
         print("Entry modified? ", self.modifiedEntry)
-        if self.pathReady and self.connectionReady and not self.modifiedEntry:
-            # Check for tables named table_x in the mySQL database, and modify tableName to be one higher than the
-            # highest table number. UNCOMMENT BELOW LATER
-            while True:
-                if (self.tableName,) in self.Database.pullall():
-                    self.tableName = self.tableName[:-1] + str(int(self.tableName[-1]) + 1)
-                    print("Table name already exists, changing to {}".format(self.tableName))
-                else:
-                    print("Table name is {}".format(self.tableName))
-                    break
-
-            # Create table in mySQL database
-            print("Creating table")
-            self.Database.createTable(self.tableName)
-            print(self.Database.pullall())
-
+        if self.pathReady and not self.modifiedEntry:
             print("Group selection")
             self.controller.frames["PageOne"].insertGroups(self.groupFolders)
             self.controller.show_frame("PageOne")
@@ -355,21 +246,36 @@ class PageOne(Frame):
                                  font=("Arial", "25"), bg="black", fg="white")
         self.backButton.place(relx=0.9, rely=0.9, anchor=CENTER)
 
+        # add frame to hold the listbox and scrollbar
+        listFrame = Frame(self)
+        listFrame.pack()
+        listFrame.place(relx=0.5, rely=0.35, anchor=CENTER)
+
         # Listbox to show all groups
-        self.groupList = Listbox(self, selectmode="multiple", height=10, width=30, font=("Arial", "25"), bg="white",
+        self.groupList = Listbox(listFrame, selectmode="multiple", height=12, width=30, font=("Arial", "25"), bg="white",
                                  fg="black", justify='center')
-        self.groupList.place(relx=0.5, rely=0.3, anchor=CENTER)
+        self.groupList.pack(side=LEFT, fill=Y)
+
+        # Add scrollbar to groupList
+        self.scrollbar = Scrollbar(listFrame, orient=VERTICAL)
+
+        # attach scrollbar to groupList listbox
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.scrollbar.config(command=self.groupList.yview)
+        self.groupList.config(yscrollcommand=self.scrollbar.set)
+
+
 
         # Two buttons underneath groupList to select and deselect all items.
         self.selectAllButton = Button(self, text="Select all", command=lambda: self.groupList.select_set(0, END),
                                       font=("Arial", "25"), bg="black", fg="white")
-        self.selectAllButton.place(relx=0.4, rely=0.7, anchor=CENTER)
+        self.selectAllButton.place(relx=0.4, rely=0.75, anchor=CENTER)
         self.deselectAllButton = Button(self, text="Deselect all", command=lambda: self.groupList.select_clear(0, END),
                                         font=("Arial", "25"), bg="black", fg="white")
-        self.deselectAllButton.place(relx=0.6, rely=0.7, anchor=CENTER)
+        self.deselectAllButton.place(relx=0.6, rely=0.75, anchor=CENTER)
 
         # Button to start identification process
-        self.startButton = Button(self, text="Start", command=lambda: self.start(),
+        self.startButton = Button(self, text="Start", command=lambda: self.startIdentification(),
                                   font=("Arial", "25"), bg="black", fg="white")
         self.startButton.place(relx=0.5, rely=0.9, anchor=CENTER)
 
@@ -379,19 +285,22 @@ class PageOne(Frame):
             self.groupList.insert(END, str(group))
             # self.groupList.itemconfig(str(group), bg="lime")
 
-    def start(self): ###################################################################################### Starts the ID process
+    def startIdentification(
+            self):  ###################################################################################### Starts the ID process
         """Start identification process"""
         print("Starting identification")
         self.selectedGroups = []
-        for  i in self.groupList.curselection():
+        for i in self.groupList.curselection():
             self.selectedGroups.append(int(self.groupList.get(i).split("_")[1]))
-        #list = (self.groupList.get(group) for group in self.groupList.curselection())
+        # list = (self.groupList.get(group) for group in self.groupList.curselection())
         print(self.selectedGroups)
-        #print((self.groupList.curselection()).split("_"))
+        # print((self.groupList.curselection()).split("_"))
         print(self.controller.frames["StartPage"].path)
-        
-        #self.controller.show_frame("PageTwo") # here the update progress page is called to display
-        Logik.logicStart(self.controller.frames["StartPage"].path, self.selectedGroups) # strats the Identefikation process on the chosen groups
+
+        # self.controller.show_frame("PageTwo") # here the update progress page is called to display
+
+        # starts the Identification process for the selected groups
+        Logik.logicStart(self.controller.frames["StartPage"].path, self.selectedGroups)
 
 
 class PageTwo(Frame):
@@ -444,8 +353,8 @@ class PageTwo(Frame):
         import random
         print("Modifying table", self.tableName)
         for i in range(50):
-            print("Fish {}".format(i+1))
-            ID = i+1
+            print("Fish {}".format(i + 1))
+            ID = i + 1
             species = random.choice(['Hake', 'Cod', 'Haddock', 'Whiting', 'Saithe', 'Horse mackerel', '*others'])
             lenght = random.uniform(20.0, 60.0)
             orientation = (random.randint(0, 180), -random.randint(0, 180))
@@ -453,18 +362,18 @@ class PageTwo(Frame):
             fishData = [ID, species, lenght, orientation[0], orientation[1], gripPoints[0], gripPoints[1]]
             self.Database.addFish(self.tableName, fishData)
 
-
-
         self.progressBarAllGroups['value'] = 0
         for group in self.groupFolders:
             print(group)
             self.progressBarAllGroupsLabel.config(text="Progress of {}".format(group))
             # self.progressBarAllGroupsLabel['text'] = self.update_progress_label(self.progressBarAllGroups)
-            self.progressBarAllGroups['value'] += 100 / (len(self.groupFolders)+1)
+            self.progressBarAllGroups['value'] += 100 / (len(self.groupFolders) + 1)
             self.progressBarSeperateGroups['value'] = 0
-            #while len(glob.glob("C:/P3OutData/Merged/group_{}/Edge/*.png".format(group))) < len(glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path,group))):
-            self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1)) #
-            self.progressBarSeperateGroups['value'] = (len(glob.glob("C:/P3OutData/Merged/{}/Edge/*.png".format(group))) / len(glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path,group))))* 100
+            # while len(glob.glob("C:/P3OutData/Merged/group_{}/Edge/*.png".format(group))) < len(glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path,group))):
+            self.progressBarSeperateGroupsLabel.config(text="Doing task {}".format(i + 1))  #
+            self.progressBarSeperateGroups['value'] = (len(glob.glob(
+                "C:/P3OutData/Merged/{}/Edge/*.png".format(group))) / len(
+                glob.glob("{}/{}/rs/rgb/*.png".format(self.controller.frames["StartPage"].path, group)))) * 100
             self.update_idletasks()
             print("Hello from task update")
             self.update_idletasks()

@@ -59,8 +59,29 @@ class SizeFinder:
             extracted = np.zeros((y, x), np.uint8)
             extracted = cv2.drawContours(extracted, [contour], -1, 255, -1)
 
+            extractedOriginal = self.imageOriginal.copy()
+            # Add the contour to the image copy
+            extractedOriginal = cv2.drawContours(extractedOriginal, [contour], -1, (0, 0, 255), 2)
+
+            # Crop the image to the blob
+            yPixelValues, xPixelValues = np.nonzero(extracted)
+            xMin = min(xPixelValues)
+            xMax = max(xPixelValues)
+            yMin = min(yPixelValues)
+            yMax = max(yPixelValues)
+            print("Normal: ", xMin, xMax, yMin, yMax)
+            extractedCropped = extracted.copy()[yMin:yMax, xMin:xMax]
+
+            # Add 50 pixels to each side of the cropped image to make sure the fish is not cut off
+            extractedCropped = cv2.copyMakeBorder(extractedCropped, 25, 25, 25, 25, cv2.BORDER_CONSTANT, value=0)
+            extractedOriginalCropped = extractedOriginal.copy()[yMin-25:yMax+25, xMin-25:xMax+25]
+
+
+
             # write the image to file
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Normal".format(fishID), extracted)
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Normal.png".format(fishID), extractedCropped)
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBNormal.png".format(fishID), extractedOriginalCropped)
+            #self.showImage([extracted, extractedCropped])
 
             #if x == 1920:
             #    self.showImage([extracted])
@@ -71,6 +92,7 @@ class SizeFinder:
 
             # Make a copy of the image to draw on
             boundedContours = extracted.copy()
+            boundedContoursPoints = extracted.copy()
 
             # Find the convex hull of the contour, withouth returning the points so that it can be used to find the convexity defects
             hull = cv2.convexHull(contour, returnPoints=False)
@@ -104,9 +126,32 @@ class SizeFinder:
 
             extractedBounded = np.zeros((y, x), np.uint8)
             extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Convex".format(fishID), extractedBounded)
+            boundedOriginal = self.imageOriginal.copy()
+            boundedOriginal = cv2.drawContours(boundedOriginal, [boundedContours[0]], -1, (0, 0, 255), 2)
 
-            self.showImage([extractedBounded, extracted])
+
+            yPixelValues, xPixelValues = np.nonzero(extractedBounded)
+            xMin = min(xPixelValues)
+            xMax = max(xPixelValues)
+            yMin = min(yPixelValues)
+            yMax = max(yPixelValues)
+            print("Bounded: ", xMin, xMax, yMin, yMax)
+            extractedBoundedCropped = extractedBounded[yMin:yMax, xMin:xMax]
+
+            # Add black pixels to the sides of the cropped image so it is the same size as the other cropped image
+            print("Shape: ", extractedCropped.shape, extractedBoundedCropped.shape)
+            xDifference = round((extractedCropped.shape[1] - extractedBoundedCropped.shape[1])/2)
+            yDifference = round((extractedCropped.shape[0] - extractedBoundedCropped.shape[0])/2)
+            extractedBoundedCropped = cv2.copyMakeBorder(extractedBoundedCropped, yDifference, yDifference, xDifference, xDifference, cv2.BORDER_CONSTANT, value=0)
+            boundedOriginalCropped = boundedOriginal[yMin-yDifference:yMax+yDifference, xMin-xDifference:xMax+xDifference]
+
+
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Convex.png".format(fishID), extractedBoundedCropped)
+            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBConvex.png".format(fishID), boundedOriginalCropped)
+
+
+
+            #self.showImage([extractedCropped, extractedBoundedCropped, extractedBoundedPointsCropped])
 
             # Get all pixel positions in contour to calculate average point
             yPixelValues, xPixelValues = np.nonzero(extractedBounded)
@@ -156,6 +201,7 @@ class SizeFinder:
         image = imageData.calibratedThresholdedImage
         imageBlobUncalibrated = imageData.seperatedThresholdedImage
         imageOriginal = imageData.img.copy()
+        self.imageOriginal = imageOriginal.copy()
 
         fishLenght = []
         fishOrientation = []

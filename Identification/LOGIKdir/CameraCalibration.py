@@ -105,11 +105,11 @@ class ImageCalibrator:
                 points2D.append(corners2)
 
                 # Draw and display the corners
-                imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
+                #imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
                 #self.showImage([imageDrawn])
-                newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
-                print("Writing to: ", newFileName)
-                cv2.imwrite(newFileName, imageDrawn)
+                #newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
+                #print("Writing to: ", newFileName)
+                #cv2.imwrite(newFileName, imageDrawn)
 
             else:
                 print("Can't find enough corners in {}.".format(name))
@@ -191,7 +191,8 @@ class ImageCalibrator:
         return [imageRGBUndistorted, imageBlobsUndistorted]
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+if False:
     groups = [4]#, 9, 15, 19]
     calibrator = ImageCalibrator()
     sizeFinder = SizeFinder()

@@ -46,7 +46,6 @@ class Cropper:
         for i, r_theta in enumerate(self.Lines):
             arr = np.array(r_theta[0], dtype=np.float64)
             r, theta = arr
-            print("Line", i, "rho:", r, "theta:", theta)
 
             a = np.cos(theta)  # Stores the value of cos(theta) in a
             b = np.sin(theta)  # Stores the value of sin(theta) in b
