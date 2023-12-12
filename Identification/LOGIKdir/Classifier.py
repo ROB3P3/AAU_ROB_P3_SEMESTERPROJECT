@@ -3,7 +3,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import f1_score
-# import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+import matplotlib.pyplot as plt
 import pandas as pd
 import math
 import cv2
@@ -30,7 +31,7 @@ class Classifier:
         for i in range(len(lengthArray)):
             print("Fish: ", i+1, " of ", len(lengthArray), " in image: ", imageData.imagePath)
             try:
-                fishData = [lengthArray[i], widthArray[i], areaArray[i], hsvArray[i][0], hsvArray[i][1], hsvArray[i][2]]
+                fishData = [lengthArray[i], widthArray[i], hsvArray[i][0], hsvArray[i][1], hsvArray[i][2]]
                 fishFeatures.append(fishData)
             except IndexError:
                 print("Feature IndexError in: ", imageData.imagePath)
@@ -52,13 +53,15 @@ class Classifier:
                 fishToRemove.append(i)
                 continue
             areaValue = row["area"]
-            redValue = float(row["avg rgb"][1:len(row["avg rgb"]) - 1].split(", ")[0])
-            greenValue = float(row["avg rgb"][1:len(row["avg rgb"]) - 1].split(", ")[1])
-            blueValue = float(row["avg rgb"][1:len(row["avg rgb"]) - 1].split(", ")[2])
-            hueValue = float(row["avg hsv"][1:len(row["avg hsv"]) - 1].split(", ")[0])
-            saturationValue = float(row["avg hsv"][1:len(row["avg hsv"]) - 1].split(", ")[1])
-            valueValue = float(row["avg hsv"][1:len(row["avg hsv"]) - 1].split(", ")[2])
-            fishData = [lengthValue, widthValue, areaValue, hueValue, saturationValue, valueValue]
+            
+            hsvArray = row["avg hsv"].replace("[", "").replace("]", "").split(" ")
+            while '' in hsvArray:
+                hsvArray.remove('')
+            
+            hueValue = float(hsvArray[0])
+            saturationValue = float(hsvArray[1])
+            valueValue = float(hsvArray[2])
+            fishData = [lengthValue, widthValue, hueValue, saturationValue, valueValue]
             arr.append(fishData)
         arr = np.asarray(arr, dtype=np.float64)
         
@@ -71,8 +74,8 @@ class Classifier:
     
     def createClassifier(self, trainingDataPath, valDataPath):
         """Create a Gaussian Naive Bayes classifier and train it with the training data"""
-        trainingData = pd.read_csv(trainingDataPath, usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
-        valData = pd.read_csv(valDataPath, usecols = ["species", "length", "width", "area", "avg rgb", "avg hsv"])
+        trainingData = pd.read_csv(trainingDataPath, usecols = ["species", "length", "width", "area", "avg hsv"])
+        valData = pd.read_csv(valDataPath, usecols = ["species", "length", "width", "area", "avg hsv"])
         
         # Create arrays of features and species in same order for training and validation data
         trainFeatureArray, trainSpeciesArray = self.extractFeatures(trainingData)
@@ -87,9 +90,14 @@ class Classifier:
 
         # Compute accuracy and f1 score based on ground truth of validation data and prediction
         accuracy = accuracy_score(valSpeciesArray, yPrediction)
-        f1 = f1_score(valSpeciesArray, yPrediction, average="weighted")
+        f1 = f1_score(valSpeciesArray, yPrediction, average=None)
+        precision = precision_score(valSpeciesArray, yPrediction, average=None)
+        recall = recall_score(valSpeciesArray, yPrediction, average=None)
         print("Accuracy:", accuracy)
         print("F1 Score:", f1)
+        print("Precision:", precision)
+        print("Recall:", recall)
+        
         # Uncomment to display confusion matrix
         """ cm = confusion_matrix(valSpeciesArray, yPrediction, labels=gausClassifier.classes_)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=gausClassifier.classes_)

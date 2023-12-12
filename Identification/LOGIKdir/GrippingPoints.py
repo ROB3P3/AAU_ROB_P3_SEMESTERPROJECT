@@ -23,6 +23,7 @@ class GrippingPoints:
         """Calculate the grasping points of the fish"""
         # Change to use the image with new blobs from Sizefinder
         image = imageData.calibratedNotAnnotatedImage
+        gripImage = image.copy()
         extremes1 = imageData.extremePointList1
         extremes2 = imageData.extremePointList2
         centerpoints = imageData.averagePoints
@@ -36,6 +37,9 @@ class GrippingPoints:
             # Calulate the perpendicular vector
             perpendicularVector = np.array([-vector[1], vector[0]])
             perpendicularLength = np.linalg.norm(perpendicularVector)
+            
+            gripImage = cv2.line(gripImage, (extremes1[i][0], extremes1[i][1]), (extremes2[i][0], extremes2[i][1]), (0, 0, 255), 2)
+            gripImage = cv2.line(gripImage, (extremes1[i][0], extremes1[i][1]), (extremes1[i][0] + perpendicularVector[0], extremes1[i][1] + perpendicularVector[1]), (0, 255, 0), 2)
             
             # Normalize the perpendicular vector for 2 directions
             posNormalizedVector = perpendicularVector / perpendicularLength
@@ -72,7 +76,9 @@ class GrippingPoints:
             grippingPointVector = np.asarray(grippingPoint[0]) - np.asarray(grippingPoint[1])
             width = np.linalg.norm(grippingPointVector)
             
+            gripImage = cv2.line(gripImage, (positivePixel[0], positivePixel[1]), (negativePixel[0], negativePixel[1]), (255, 255, 0), 2)
+            
             grippingPoints.append(grippingPoint)
             fishWidths.append(width)
 
-        return grippingPoints, fishWidths
+        return grippingPoints, fishWidths, gripImage

@@ -71,6 +71,7 @@ class ImageData:
     def setAttributesFromGrippingPoints(self, gPointsOutput):
         self.fishGrippingPoints = gPointsOutput[0]
         self.fishWidths = gPointsOutput[1]
+        self.grippingPointImage = gPointsOutput[2]
     
     def setZValuesOfPoints(self, zValuePointOutput):
         self.averagePoints = zValuePointOutput[0]

@@ -33,6 +33,8 @@ def pathingSetup(group, rootPath):
         os.makedirs("{}/group_{}/ColourTH".format(rootPath, group))
     if not os.path.exists("{}/group_{}/THSum".format(rootPath, group)):
         os.makedirs("{}/group_{}/THSum".format(rootPath, group))
+    if not os.path.exists("{}/group_{}/GripPoints".format(rootPath, group)):
+        os.makedirs("{}/group_{}/GripPoints".format(rootPath, group))
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
@@ -77,6 +79,9 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             imageData.setZValuesOfPoints(grippingPoints.applyZValues(imageData))
             imageData.setAverageHSV(classifierClass.calculateAverageHSV(imageData))
             imageData.setSpeciesFromClassifier(classifierClass.predictSpecies(gaussianClassifier, imageData))
+            
+            os.chdir("{}/group_{}/GripPoints/".format(outputDataRootPath, group))
+            cv2.imwrite("{} Gripping Points.png".format(name), imageData.grippingPointImage)
         
             # Relevant data is written to a csv file
             os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
@@ -148,10 +153,9 @@ class threading:
 def logicHandle(pathInputRoot, groups):
     # For timing the pressings runtime. Not critical for function
     startTime = time.time()
-
+    
     clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv",
-                                             "./Identification/DATAdir/validation_data.csv")
+    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/annotated_training_data.csv", "./Identification/DATAdir/annotated_validation_data.csv")
 
     for group in groups:
         ########################################### Setup params ##############################################
