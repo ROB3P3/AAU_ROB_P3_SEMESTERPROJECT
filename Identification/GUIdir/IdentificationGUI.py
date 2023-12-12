@@ -246,10 +246,24 @@ class PageOne(Frame):
                                  font=("Arial", "25"), bg="black", fg="white")
         self.backButton.place(relx=0.9, rely=0.9, anchor=CENTER)
 
+        # add frame to hold the listbox and scrollbar
+        listFrame = Frame(self)
+        listFrame.pack()
+        listFrame.place(relx=0.5, rely=0.35, anchor=CENTER)
+
         # Listbox to show all groups
-        self.groupList = Listbox(self, selectmode="multiple", height=10, width=30, font=("Arial", "25"), bg="white",
+        self.groupList = Listbox(listFrame, selectmode="multiple", height=12, width=30, font=("Arial", "25"),
+                                 bg="white",
                                  fg="black", justify='center')
-        self.groupList.place(relx=0.5, rely=0.3, anchor=CENTER)
+        self.groupList.pack(side=LEFT, fill=Y)
+
+        # Add scrollbar to groupList
+        self.scrollbar = Scrollbar(listFrame, orient=VERTICAL)
+
+        # attach scrollbar to groupList listbox
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.scrollbar.config(command=self.groupList.yview)
+        self.groupList.config(yscrollcommand=self.scrollbar.set)
 
         # Two buttons underneath groupList to select and deselect all items.
         self.selectAllButton = Button(self, text="Select all", command=lambda: self.groupList.select_set(0, END),
