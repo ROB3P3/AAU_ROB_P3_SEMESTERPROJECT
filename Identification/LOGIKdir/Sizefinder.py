@@ -203,7 +203,16 @@ class SizeFinder:
         contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         # remove all contours whose area is smaller than 5000 pixels in area
-        sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
+        sortedContours = []
+        trueNegatives = 0
+        for contour in contours:
+            if cv2.contourArea(contour) > 5000:
+                sortedContours.append(contour)
+            else:
+                trueNegatives += 1
+        print("There are {} true negatives in image: {}".format(trueNegatives, imageData.imagePath))
+
+
         sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
 
 
@@ -398,4 +407,4 @@ class SizeFinder:
         # imagePath = imageData.imagePath
         # name = imagePath.rsplit('\\', 1)[-1]
         # cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated, trueNegatives

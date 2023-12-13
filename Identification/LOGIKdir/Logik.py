@@ -86,7 +86,7 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
             # Relevant data is written to a csv file
             os.chdir("{}/group_{}/Results".format(outputDataRootPath, group))
             
-            csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv"]
+            csvHeader = ["group id", "image id", "fish index", "species", "length", "width", "area", "gripping points", "center point", "orientations", "avg hsv", "true negatives"]
             collectedFishOutput = classifierClass.createFishDictionary(imageData)
             with open("result{}.csv".format(str(imageData.index).zfill(5)), "w", newline='') as file:
                 csvDictWriter = csv.DictWriter(file, csvHeader)
@@ -155,7 +155,7 @@ def logicHandle(pathInputRoot, groups):
     startTime = time.time()
     
     clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/annotated_training_data.csv", "./Identification/DATAdir/annotated_validation_data.csv")
+    gaussianClassifer = clf.createClassifier("DATAdir/annotated_training_data.csv", "DATAdir/annotated_validation_data.csv")
 
     for group in groups:
         ########################################### Setup params ##############################################
