@@ -13,8 +13,9 @@ class GrippingPoints:
         newAveragePoints = []
         newGrippingPoints = []
         for i, point in enumerate(averagePoints):
-            newAveragePoints.append([point[0], point[1], imageZ[point[1]][point[0]][0]])
-            newGrippingPoints.append([[grippingPoints[i][0][0], grippingPoints[i][0][1], imageZ[point[1]][point[0]][0]], [grippingPoints[i][1][0], grippingPoints[i][1][1], imageZ[point[1]][point[0]][0]]])
+            zCoord = (imageZ[point[1]][point[0]][0] - 10.8) / 2 if imageZ[point[1]][point[0]][0] > 10.8 else 0
+            newAveragePoints.append([point[0], point[1], zCoord])
+            newGrippingPoints.append([[grippingPoints[i][0][0], grippingPoints[i][0][1], zCoord], [grippingPoints[i][1][0], grippingPoints[i][1][1], zCoord]])
         
         # add this into data.py
         return newAveragePoints, newGrippingPoints
