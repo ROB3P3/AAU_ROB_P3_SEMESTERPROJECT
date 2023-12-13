@@ -3,8 +3,8 @@ import cv2
 import glob
 import os
 #from LOGIKdir.AutoCrop import Cropper as AutoCrop
-from Identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
-from Identification.LOGIKdir.Sizefinder import SizeFinder
+from LOGIKdir.AutoCrop import Cropper as AutoCrop
+#from Identification.LOGIKdir.Sizefinder import SizeFinder
 
 
 class ImageCalibrator:
@@ -70,7 +70,7 @@ class ImageCalibrator:
         objectPoints3D = np.zeros((boardShape[0] * boardShape[1], 3), np.float32)
         objectPoints3D[:, :2] = np.mgrid[0:boardShape[0], 0:boardShape[1]].T.reshape(-1, 2)
 
-        print("Preparing objectPoints3D: ", objectPoints3D)
+        #print("Preparing objectPoints3D: ", objectPoints3D)
 
         print("Finding checkerboards in images...", calibrationPath)
         for i, fileName in enumerate(calibrationPath):
@@ -161,14 +161,13 @@ class ImageCalibrator:
         # clearDirectory(outputPathCalibration.format("*"))
 
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
-        # If the shape of the image is 1920x1080, warp the perspective to 1080x1080
-        if imageRGB.shape[0] == 1920 and imageRGB.shape[1] == 1080:
-            # Get warp matrix to perspective transform the images.
-            warpMatrix = self.WarpPerspective(imageRGB)
-            imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
-            imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
-        else:
-            imageBlobsWarped = imageBlobs
+        # Get warp matrix to perspective transform the images.
+        warpMatrix = self.WarpPerspective(imageRGB)
+        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
+        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+
+        #self.showImage([imageRGB, imageBlobsWarped])
+
 
         # Calibrate the warped image of fish.
         #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))

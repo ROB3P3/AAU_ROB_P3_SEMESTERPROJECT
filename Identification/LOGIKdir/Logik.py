@@ -66,12 +66,13 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
 
             # Runs and saves output from SizeFinder
             imageData.setAtributesFromSizeFinder(sizeFinder.findSize(imageData))
-            break
+
             # Writes Size images and boundingboxes to files
             os.chdir("{}/group_{}/Size/".format(outputDataRootPath, group))
             cv2.imwrite("{} Size Calibrated.png".format(name), imageData.annotatedImage)
             cv2.imwrite("{} OG.png".format(name), imageData.boundingBoxImage)
             cv2.imwrite("{} Size Uncalibrated.png".format(name), imageData.annotatedImageUncalibrated)
+            break
 
             # Classifier starts
             imageData.setAttributesFromGrippingPoints(grippingPoints.calcGrippingPoints(imageData))
@@ -159,14 +160,10 @@ class threading:
 def logicHandle(pathInputRoot, groups):
     # For timing the pressings runtime. Not critical for function
     startTime = time.time()
-    
-    clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv", "./Identification/DATAdir/validation_data.csv")
-    
 
     clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/training_data.csv",
-                                             "./Identification/DATAdir/validation_data.csv")
+    gaussianClassifer = clf.createClassifier("DATAdir/training_data.csv",
+                                             "DATAdir/validation_data.csv")
 
     for group in groups:
         ########################################### Setup params ##############################################

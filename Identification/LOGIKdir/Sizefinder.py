@@ -53,6 +53,7 @@ class SizeFinder:
 
         # Goes through every blob
         for contour in contours:
+            print("Blob: ", fishID, " of ", len(contours), " in image: ", self.imageData.imagePath)
             averagePoint = []
 
             # Get all pixel positions in contour to calculate average point
@@ -63,28 +64,23 @@ class SizeFinder:
             # Add the contour to the image copy
             extractedOriginal = cv2.drawContours(extractedOriginal, [contour], -1, (0, 0, 255), 2)
 
-            # Crop the image to the blob
-            yPixelValues, xPixelValues = np.nonzero(extracted)
-            xMin = min(xPixelValues)
-            xMax = max(xPixelValues)
-            yMin = min(yPixelValues)
-            yMax = max(yPixelValues)
-            print("Normal: ", xMin, xMax, yMin, yMax)
-            extractedCropped = extracted.copy()[yMin:yMax, xMin:xMax]
+            if not x == 1920:
+                # Crop the image to the blob
+                yPixelValues, xPixelValues = np.nonzero(extracted)
+                xMin = min(xPixelValues)
+                xMax = max(xPixelValues)
+                yMin = min(yPixelValues)
+                yMax = max(yPixelValues)
+                print("Normal: ", xMin, xMax, yMin, yMax)
+                extractedCropped = extracted.copy()[yMin:yMax, xMin:xMax]
+                # Add 50 pixels to each side of the cropped image to make sure the fish is not cut off
+                extractedCropped = cv2.copyMakeBorder(extractedCropped, 25, 25, 25, 25, cv2.BORDER_CONSTANT, value=0)
+                extractedOriginalCropped = extractedOriginal.copy()[yMin - 25:yMax + 25, xMin - 25:xMax + 25]
 
-            # Add 50 pixels to each side of the cropped image to make sure the fish is not cut off
-            extractedCropped = cv2.copyMakeBorder(extractedCropped, 25, 25, 25, 25, cv2.BORDER_CONSTANT, value=0)
-            extractedOriginalCropped = extractedOriginal.copy()[yMin-25:yMax+25, xMin-25:xMax+25]
-
-
-
-            # write the image to file
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Normal.png".format(fishID), extractedCropped)
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBNormal.png".format(fishID), extractedOriginalCropped)
-            #self.showImage([extracted, extractedCropped])
-
-            #if x == 1920:
-            #    self.showImage([extracted])
+                # write the image to file
+                cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Normal.png".format(fishID), extractedCropped)
+                cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBNormal.png".format(fishID), extractedOriginalCropped)
+                # self.showImage([extracted, extractedCropped])
 
             # Make a copy of the blobs in RGB to use as a comparison image
             blobsRGB = extracted.copy()
@@ -93,9 +89,13 @@ class SizeFinder:
             # Make a copy of the image to draw on
             boundedContours = extracted.copy()
             boundedContoursPoints = extracted.copy()
+            boundedContoursPoints = cv2.cvtColor(boundedContoursPoints, cv2.COLOR_GRAY2RGB)
 
             # Find the convex hull of the contour, withouth returning the points so that it can be used to find the convexity defects
             hull = cv2.convexHull(contour, returnPoints=False)
+            hullPoints = cv2.convexHull(contour, returnPoints=True)
+
+            boundedOriginal = self.imageOriginal.copy()
 
             # Find the convexity defects of the contour and use them to draw the convex hull
             try:
@@ -108,50 +108,87 @@ class SizeFinder:
 
             for i in range(defects.shape[0]):
                 # Get the start, end, and far points of the convexity defect
+
                 s, e, f, d = defects[i, 0]
                 start = tuple(contour[s][0])
                 end = tuple(contour[e][0])
                 far = tuple(contour[f][0])
 
+                # Draw the convex hull in boundedOriginal
+                cv2.line(boundedOriginal, start, end, (0, 255, 0), 2)
 
-                # Calculate the lenght of the line from the start to the end point
-                lenght = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
+                # Draw the far point in boundedOriginal
+                cv2.circle(boundedOriginal, far, 5, (0, 0, 255), -1)
 
+                # Find the lenght between the start and far point
+                # lenght1 = math.sqrt((start[0] - far[0]) ** 2 + (start[1] - far[1]) ** 2)
+                # Find the lenght between the start and end point
+                # lenght2 = math.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
+
+                # If lenght 1 is bigger than lenght 2, take the halfway instead.
+                """if lenght1 > lenght2:
+                    print("lengt1 longer than lenght2")
+                    print((start[0] + end[0]) // 2)
+                    halfPoint = ((start[0] + end[0]) // 2, (start[1] + end[1]) // 2)
+                else:
+                    print("lengt1 shorter than lenght2")
+                    print(round((start[1] + end[1]) *  math.sqrt((start[1] - far[1]) ** 2)))
+                    print((start[1] + end[1]) // 2)
+                    halfPoint = (
+                    round((start[0] + end[0]) *  math.sqrt((start[0] - far[0]) ** 2)), round((start[1] + end[1]) *  math.sqrt((start[1] - far[1]) ** 2)))"""
+
+                # print("Length1: ", lenght1, " Length2: ", lenght2)
+
+                # Move the far point halfway towards the half point
+                # far = ((far[0] + halfPoint[0]) // 2, (far[1] + halfPoint[1]) // 2)
+
+                # Draw the new far point in boundedOriginal
+                cv2.circle(boundedOriginal, far, 5, (0, 255, 0), -1)
 
                 cv2.line(boundedContours, start, far, 255, 2)
                 cv2.line(boundedContours, end, far, 255, 2)
+
+                # Draw a circle at the start, end, and far points
+                cv2.circle(boundedContoursPoints, start, 5, (0, 0, 255), -1)
+                cv2.circle(boundedContoursPoints, end, 5, (0, 255, 0), -1)
+                cv2.circle(boundedContoursPoints, far, 5, (255, 0, 0), -1)
+                # Draw a line from the start to the end point
+                cv2.line(boundedContoursPoints, start, far, (135, 135, 0), 2)
+                cv2.line(boundedContoursPoints, end, far, (135, 0, 135), 2)
+
+            # self.showImage([boundedContoursPoints])
 
             # Extract the new bounded contour
             boundedContours = cv2.findContours(boundedContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
             extractedBounded = np.zeros((y, x), np.uint8)
             extractedBounded = cv2.drawContours(extractedBounded, [boundedContours[0]], -1, 255, -1)
-            boundedOriginal = self.imageOriginal.copy()
+
             boundedOriginal = cv2.drawContours(boundedOriginal, [boundedContours[0]], -1, (0, 0, 255), 2)
 
+            if not x == 1920:
+                # self.showImage([boundedOriginal, boundedContoursPoints])
+                yPixelValues, xPixelValues = np.nonzero(extractedBounded)
+                xMin = min(xPixelValues)
+                xMax = max(xPixelValues)
+                yMin = min(yPixelValues)
+                yMax = max(yPixelValues)
+                print("Bounded: ", xMin, xMax, yMin, yMax)
+                extractedBoundedCropped = extractedBounded[yMin:yMax, xMin:xMax]
 
-            yPixelValues, xPixelValues = np.nonzero(extractedBounded)
-            xMin = min(xPixelValues)
-            xMax = max(xPixelValues)
-            yMin = min(yPixelValues)
-            yMax = max(yPixelValues)
-            print("Bounded: ", xMin, xMax, yMin, yMax)
-            extractedBoundedCropped = extractedBounded[yMin:yMax, xMin:xMax]
+                # Add black pixels to the sides of the cropped image so it is the same size as the other cropped image
+                print("Shape: ", extractedCropped.shape, extractedBoundedCropped.shape)
+                xDifference = round((extractedCropped.shape[1] - extractedBoundedCropped.shape[1]) / 2)
+                yDifference = round((extractedCropped.shape[0] - extractedBoundedCropped.shape[0]) / 2)
+                extractedBoundedCropped = cv2.copyMakeBorder(extractedBoundedCropped, yDifference, yDifference,
+                                                             xDifference, xDifference, cv2.BORDER_CONSTANT, value=0)
+                boundedOriginalCropped = boundedOriginal[yMin - yDifference:yMax + yDifference,
+                                         xMin - xDifference:xMax + xDifference]
 
-            # Add black pixels to the sides of the cropped image so it is the same size as the other cropped image
-            print("Shape: ", extractedCropped.shape, extractedBoundedCropped.shape)
-            xDifference = round((extractedCropped.shape[1] - extractedBoundedCropped.shape[1])/2)
-            yDifference = round((extractedCropped.shape[0] - extractedBoundedCropped.shape[0])/2)
-            extractedBoundedCropped = cv2.copyMakeBorder(extractedBoundedCropped, yDifference, yDifference, xDifference, xDifference, cv2.BORDER_CONSTANT, value=0)
-            boundedOriginalCropped = boundedOriginal[yMin-yDifference:yMax+yDifference, xMin-xDifference:xMax+xDifference]
+                cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Convex.png".format(fishID), extractedBoundedCropped)
+                cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBConvex.png".format(fishID), boundedOriginalCropped)
 
-
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}Convex.png".format(fishID), extractedBoundedCropped)
-            cv2.imwrite("C:/P3OutData/Example/Size/Convex/{}RGBConvex.png".format(fishID), boundedOriginalCropped)
-
-
-
-            #self.showImage([extractedCropped, extractedBoundedCropped, extractedBoundedPointsCropped])
+            # self.showImage([extractedCropped, extractedBoundedCropped, extractedBoundedPointsCropped])
 
             # Get all pixel positions in contour to calculate average point
             yPixelValues, xPixelValues = np.nonzero(extractedBounded)
@@ -191,7 +228,7 @@ class SizeFinder:
 
             fishID += 1
             cv2.drawContours(contoursFinal, boundedContours, -1, 255, -1)
-        #if x == 1920:
+        # if x == 1920:
         #    self.showImage([contoursFinal])
         return properties, positions, separateContours, areas
 
@@ -201,7 +238,7 @@ class SizeFinder:
         image = imageData.calibratedThresholdedImage
         imageBlobUncalibrated = imageData.seperatedThresholdedImage
         imageOriginal = imageData.img.copy()
-        self.imageOriginal = imageOriginal.copy()
+        self.imageOriginal = imageData.calibratedRGBImage.copy()
 
         fishLenght = []
         fishOrientation = []
@@ -230,18 +267,18 @@ class SizeFinder:
         sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
         sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
 
-
         y = image.shape[0]
         x = image.shape[1]
         blankImage = np.zeros((y, x), np.uint8)
         contoursDrawn = cv2.drawContours(blankImage, sortedContours, -1, 255, -1)
 
         # erode and dilate to make contours monotonous for convex defects
-        image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
-        image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
-        #cv2.imshow("contoursDrawn", contoursDrawn)
+        # image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
+        # image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
 
 
+        image = contoursDrawn
+        # cv2.imshow("contoursDrawn", contoursDrawn)
 
         yUncalibrated = imageOriginal.shape[0]
         xUncalibrated = imageOriginal.shape[1]
@@ -249,19 +286,19 @@ class SizeFinder:
         contoursDrawnUncalibrated = cv2.drawContours(blankImageUncalibrated, sortedContoursUncalibrated, -1, 255, -1)
         imageBlobUncalibrated = cv2.erode(contoursDrawnUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
         imageBlobUncalibrated = cv2.dilate(imageBlobUncalibrated, np.ones((3, 3), np.uint8), iterations=1)
-        #cv2.imshow("contoursDrawnUncalibrated", contoursDrawnUncalibrated)
-        #cv2.waitKey(0)
+        # cv2.imshow("contoursDrawnUncalibrated", contoursDrawnUncalibrated)
+        # cv2.waitKey(0)
 
         # Find contours (blobs) of binary image
         contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         # remove all contours whose area is smaller than 5000 pixels
         sortedContours = [contour for contour in contours if cv2.contourArea(contour) > 5000]
-        #sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
+        # sortedContours = sorted(sortedContours, key=cv2.contourArea, reverse=True)
         blobsData, positions, separateContours, fishAreas = self.blobProperties(sortedContours, y, x)
 
         contoursUncalibrated = cv2.findContours(imageBlobUncalibrated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         sortedContoursUncalibrated = [contour for contour in contoursUncalibrated if cv2.contourArea(contour) > 5000]
-        #sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
+        # sortedContoursUncalibrated = sorted(sortedContoursUncalibrated, key=cv2.contourArea, reverse=True)
         blobsDataUncalibrated, positionsUncalibrated, separateContoursUncalibrated, fishAreasUncalibrated = self.blobProperties(
             sortedContoursUncalibrated, yUncalibrated, xUncalibrated)
 
@@ -269,143 +306,216 @@ class SizeFinder:
         imagePlotUncalibrated = cv2.cvtColor(imagePlotUncalibrated, cv2.COLOR_GRAY2RGB)
 
         for i in range(len(blobsDataUncalibrated)):
-            # Points for the uncalibrated blob image
-            averagePointUncalibrated = positionsUncalibrated[i][4]
-            extremePointLeftUncalibrated = positionsUncalibrated[i][0]
-            extremePointRightUncalibrated = positionsUncalibrated[i][1]
-            extremePointTopUncalibrated = positionsUncalibrated[i][2]
-            extremePointBottomUncalibrated = positionsUncalibrated[i][3]
-            extremePointListUncalibrated = [extremePointLeftUncalibrated, extremePointRightUncalibrated,
-                                            extremePointTopUncalibrated, extremePointBottomUncalibrated]
+            if i == 4:
+                # Points for the uncalibrated blob image
+                averagePointUncalibrated = positionsUncalibrated[i][4]
+                extremePointLeftUncalibrated = positionsUncalibrated[i][0]
+                extremePointRightUncalibrated = positionsUncalibrated[i][1]
+                extremePointTopUncalibrated = positionsUncalibrated[i][2]
+                extremePointBottomUncalibrated = positionsUncalibrated[i][3]
+                extremePointListUncalibrated = [extremePointLeftUncalibrated, extremePointRightUncalibrated,
+                                                extremePointTopUncalibrated, extremePointBottomUncalibrated]
 
-            originalImage = cv2.rectangle(imageOriginal,
-                                          [extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]],
-                                          [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]],
-                                          colours[i], 2)
-            cv2.drawContours(imagePlotUncalibrated, separateContoursUncalibrated[i], -1, colours[i], -1)
+                originalImage = cv2.rectangle(imageOriginal,
+                                              [extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]],
+                                              [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]],
+                                              colours[i], 2)
+                cv2.drawContours(imagePlotUncalibrated, separateContoursUncalibrated[i], -1, colours[i], -1)
 
-            # Label blobs
-            fishText = "Fish" + str(i+1)
-            # fishText = str(round(blobsData[i]))
-            cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        invertedColors[i], 1, cv2.LINE_AA)
-
+                # Label blobs
+                fishText = "Fish" + str(i + 1)
+                # fishText = str(round(blobsData[i]))
+                cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imagePlotUncalibrated, fishText, averagePointUncalibrated, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            invertedColors[i], 1, cv2.LINE_AA)
 
         # self.showImage([blankUncalibrated])
 
         imagePlotAll = np.zeros((y, x), np.uint8)
         imagePlotAll = cv2.cvtColor(imagePlotAll, cv2.COLOR_GRAY2RGB)
+        imageOriginalSize = imageOriginal.copy()
         for i, fishID in enumerate(blobsData):
-            imagePlot = np.zeros((y, x), np.uint8)
-            imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
+            if i == 4:
+                imagePlot = np.zeros((y, x), np.uint8)
+                imagePlot = cv2.cvtColor(imagePlot, cv2.COLOR_GRAY2RGB)
+                imagePlotExample = imagePlot.copy()
+                imagePlotCrop = np.zeros((y, x), np.uint8)
 
-            # Points for the calibrated blob image
-            averagePoint = positions[i][4]
-            extremePointLeft = positions[i][0]
-            extremePointRight = positions[i][1]
-            extremePointTop = positions[i][2]
-            extremePointBottom = positions[i][3]
-            extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
+                # Points for the calibrated blob image
+                averagePoint = positions[i][4]
+                extremePointLeft = positions[i][0]
+                extremePointRight = positions[i][1]
+                extremePointTop = positions[i][2]
+                extremePointBottom = positions[i][3]
+                extremePointList = [extremePointLeft, extremePointRight, extremePointTop, extremePointBottom]
 
-            cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
+                cv2.drawContours(imagePlot, separateContours[i], -1, colours[i], -1)  # , colours[i], thickness=cv2.FILLED)
+                cv2.drawContours(imagePlotExample, separateContours[i], -1, (255, 255, 255), -1)
+                imagePlotCrop = cv2.drawContours(imagePlotCrop, separateContours[i], -1, 255, -1)
 
-            lineColor = [round(255 / 2), round(255 / 2), round(255 / 2)]
+                lineColor = [round(255 / 2), round(255 / 2), round(255 / 2)]
 
-            # print("Drawing average point: ", averagePoint)
+                # print("Drawing average point: ", averagePoint)
 
-            cv2.circle(imagePlot, averagePoint, 5, (255, 0, 0), -1)
+                cv2.circle(imagePlot, averagePoint, 5, (255, 0, 0), -1)
 
-            # Calculate distance from average point to extremepoints
-            lenght2MinX = math.sqrt(
-                (extremePointLeft[0] - averagePoint[0]) ** 2 + (extremePointLeft[1] - averagePoint[1]) ** 2)
-            lenght2MaxX = math.sqrt(
-                (extremePointRight[0] - averagePoint[0]) ** 2 + (extremePointRight[1] - averagePoint[1]) ** 2)
-            lenght2MinY = math.sqrt(
-                (extremePointTop[0] - averagePoint[0]) ** 2 + (extremePointTop[1] - averagePoint[1]) ** 2)
-            lenght2MaxY = math.sqrt(
-                (extremePointBottom[0] - averagePoint[0]) ** 2 + (extremePointBottom[1] - averagePoint[1]) ** 2)
-            lenghts = [lenght2MinX, lenght2MaxX, lenght2MinY, lenght2MaxY]
-            # If any of the values in lenght is equal to another value, add 0.0001 to one of them.
-            for j, lenght in enumerate(lenghts):
-                for l, lenght2 in enumerate(lenghts):
-                    if lenght == lenght2 and j != l:
-                        lenghts[j] += 0.0001
+                # Calculate distance from average point to extremepoints
+                lenght2MinX = math.sqrt(
+                    (extremePointLeft[0] - averagePoint[0]) ** 2 + (extremePointLeft[1] - averagePoint[1]) ** 2)
+                lenght2MaxX = math.sqrt(
+                    (extremePointRight[0] - averagePoint[0]) ** 2 + (extremePointRight[1] - averagePoint[1]) ** 2)
+                lenght2MinY = math.sqrt(
+                    (extremePointTop[0] - averagePoint[0]) ** 2 + (extremePointTop[1] - averagePoint[1]) ** 2)
+                lenght2MaxY = math.sqrt(
+                    (extremePointBottom[0] - averagePoint[0]) ** 2 + (extremePointBottom[1] - averagePoint[1]) ** 2)
+                lenghts = [lenght2MinX, lenght2MaxX, lenght2MinY, lenght2MaxY]
+                # If any of the values in lenght is equal to another value, add 0.0001 to one of them.
+                for j, lenght in enumerate(lenghts):
+                    for l, lenght2 in enumerate(lenghts):
+                        if lenght == lenght2 and j != l:
+                            lenghts[j] += 0.0001
 
-            # Determine the 2 most points furthest from the average point
-            extremePoint1Index = lenghts.index(sorted(lenghts, reverse=True)[0])
-            extremePoint1 = extremePointList[extremePoint1Index]
-            extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
-            extremePoint2 = extremePointList[extremePoint2Index]
-
-            # Calculate angle between from averagfrom the average point.
-            # Find orientation of fish head and tail (cannot determine which is which).
-            angle1 = (math.atan2((extremePoint1[1] - averagePoint[1]),
-                                 (extremePoint1[0] - averagePoint[0]))) * 180 / math.pi
-            angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
-                                 (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
-            angleBetweenExtremes = angle1 - angle2
-            angles = (angle1, angle2)
-
-            # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
-            # then use the extreme point which is third furthest away from the average point as extreme point 2.
-            if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
-                lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
+                # Determine the 2 most points furthest from the average point
+                extremePoint1Index = lenghts.index(sorted(lenghts, reverse=True)[0])
+                extremePoint1 = extremePointList[extremePoint1Index]
                 extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
                 extremePoint2 = extremePointList[extremePoint2Index]
+
+                # Calculate angle between from averagfrom the average point.
+                # Find orientation of fish head and tail (cannot determine which is which).
+                angle1 = (math.atan2((extremePoint1[1] - averagePoint[1]),
+                                     (extremePoint1[0] - averagePoint[0]))) * 180 / math.pi
                 angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
                                      (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
+                angleBetweenExtremes = angle1 - angle2
+                angles = (angle1, angle2)
 
-            # calculate total pixel lenght of fish.
-            totalLenght = float(sum(sorted(lenghts)[2:]))
+                # If the angle between extreme point 2 and extreme point 1 is less that 45 degrees,
+                # then use the extreme point which is third furthest away from the average point as extreme point 2.
+                if -90 < angleBetweenExtremes < 90 or -270 > angleBetweenExtremes > -360 or 270 < angleBetweenExtremes < 360:
+                    lenghts[lenghts.index(sorted(lenghts, reverse=True)[1])] = 0
+                    extremePoint2Index = lenghts.index(sorted(lenghts, reverse=True)[1])
+                    extremePoint2 = extremePointList[extremePoint2Index]
+                    angle2 = (math.atan2((extremePoint2[1] - averagePoint[1]),
+                                         (extremePoint2[0] - averagePoint[0]))) * 180 / math.pi
 
-            # Plot lines to extreme points, and mark the lines chosen.
-            cv2.line(imagePlot, averagePoint, extremePointLeft, lineColor, 2)
-            cv2.line(imagePlot, averagePoint, extremePointRight, lineColor, 2)
-            cv2.line(imagePlot, averagePoint, extremePointTop, lineColor, 2)
-            cv2.line(imagePlot, averagePoint, extremePointBottom, lineColor, 2)
-            cv2.line(imagePlot, averagePoint, extremePoint1, invertedColors[i], 3)
-            cv2.line(imagePlot, averagePoint, extremePoint2, invertedColors[i], 3)
+                # calculate total pixel lenght of fish.
+                totalLenght = float(sum(sorted(lenghts)[2:]))
 
-            # convert pixel lenght to centimeters.
-            # convertedLenght = float((totalLenght * 0.4) / 10)
-            convertedLenght = round(totalLenght)
+                # Plot lines to extreme points, and mark the lines chosen.
+                cv2.line(imagePlot, averagePoint, extremePointLeft, lineColor, 2)
+                cv2.line(imagePlot, averagePoint, extremePointRight, lineColor, 2)
+                cv2.line(imagePlot, averagePoint, extremePointTop, lineColor, 2)
+                cv2.line(imagePlot, averagePoint, extremePointBottom, lineColor, 2)
+                cv2.line(imagePlot, averagePoint, extremePoint1, invertedColors[i], 3)
+                cv2.line(imagePlot, averagePoint, extremePoint2, invertedColors[i], 3)
 
-            # Label lenght of fish
-            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (255, 255, 255), 1, cv2.LINE_AA)
 
-            # Label blobs
-            fishText = "Fish" + str(fishID)
-            # fishText = str(round(blobsData[i]))
-            cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        invertedColors[i], 1, cv2.LINE_AA)
+                # Repeat for imagePlotExample
+                cv2.line(imagePlotExample, averagePoint, extremePointLeft, (255,0,0), 2)
+                cv2.line(imagePlotExample, averagePoint, extremePointRight, (0,255,0), 2)
+                cv2.line(imagePlotExample, averagePoint, extremePointTop, (0,0,255), 2)
+                cv2.line(imagePlotExample, averagePoint, extremePointBottom, (255,0,255), 2)
+                # Draw the points in imagePlotExample
+                cv2.circle(imagePlotExample, extremePointLeft, 5, (255, 0, 0), -1)
+                cv2.circle(imagePlotExample, extremePointRight, 5, (0, 255, 0), -1)
+                cv2.circle(imagePlotExample, extremePointTop, 5, (0, 0, 255), -1)
+                cv2.circle(imagePlotExample, extremePointBottom, 5, (255, 0, 255), -1)
+                # Under the points, write the lenghts of the lines, with the text rotated 90 degrees.
 
-            fishLenght.append(totalLenght)
 
-            # put angles on the lines to show.
-            cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        invertedColors[i], 1, cv2.LINE_AA)
+                # Create blank image to write text on
+                blankImage = np.zeros((y, x), np.uint8)
+                blankImage = cv2.cvtColor(blankImage, cv2.COLOR_GRAY2RGB)
+                # Rotate the image -90 degrees
+                blankImage = cv2.rotate(blankImage, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-            cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        (0, 0, 0), 4, cv2.LINE_AA)
-            cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        invertedColors[i], 1, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MinX)), (extremePointLeft[1], extremePointLeft[0]-50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MinX)), (extremePointLeft[1], extremePointLeft[0]-50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (255, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MaxX)), (extremePointRight[0], extremePointRight[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MaxX)), (extremePointRight[0], extremePointRight[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MinY)), (extremePointTop[1], extremePointTop[0]), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MinY)), (extremePointTop[1], extremePointTop[0]), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 255), 1, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MaxY)), (extremePointBottom[1], extremePointBottom[0]+10), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(blankImage, str(round(lenght2MaxY)), (extremePointBottom[1], extremePointBottom[0]+10), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (255, 0, 255), 1, cv2.LINE_AA)
 
-            fishOrientation.append(angles)
-            averagePoints.append(averagePoint)
-            extremePoint1List.append(extremePoint1)
-            extremePoint2List.append(extremePoint2)
-            imagePlotAll = cv2.add(imagePlotAll, imagePlot)
+                # Rotate the image -90 degrees
+                blankImage = cv2.rotate(blankImage, cv2.ROTATE_90_CLOCKWISE)
+                # draw the image on imagePlotExample
+                print("Shape: ", imagePlotExample.shape, blankImage.shape)
+                self.showImage([imagePlotExample, blankImage])
+                imagePlotExample = cv2.add(imagePlotExample, blankImage)
+
+                # convert pixel lenght to centimeters.
+                # convertedLenght = float((totalLenght * 0.4) / 10)
+                convertedLenght = round(totalLenght)
+
+                # Label lenght of fish
+                cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imagePlot, str(round(convertedLenght, 1)), (averagePoint[0], averagePoint[1] + 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (255, 255, 255), 1, cv2.LINE_AA)
+
+                # Label blobs
+                """fishText = "Fish" + str(fishID)
+                # fishText = str(round(blobsData[i]))
+                cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imagePlot, fishText, averagePoint, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            invertedColors[i], 1, cv2.LINE_AA)"""
+
+                fishLenght.append(totalLenght)
+
+                # put angles on the lines to show.
+                cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imagePlot, str(round(angle1)), extremePoint1, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            invertedColors[i], 1, cv2.LINE_AA)
+
+                cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            (0, 0, 0), 4, cv2.LINE_AA)
+                cv2.putText(imagePlot, str(round(angle2)), extremePoint2, cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                            invertedColors[i], 1, cv2.LINE_AA)
+
+                if i == 4:
+                    # crop the image to the blob
+                    greyImage = imagePlotCrop
+                    yPixelValues, xPixelValues = np.nonzero(greyImage)
+                    xMin = min(xPixelValues)-50
+                    xMax = max(xPixelValues)+50
+                    yMin = min(yPixelValues)-50
+                    yMax = max(yPixelValues)+50
+                    print("Normal: ", xMin, xMax, yMin, yMax)
+                    imagePlotCropped = imagePlotExample[yMin:yMax, xMin:xMax]
+                    imagePlotCropped2 = imagePlot[yMin:yMax, xMin:xMax]
+                    # imagePlotOriginalCropped = imageOriginalSize[yMin-25:yMax+25, xMin-25:xMax+25]
+                    # write the image to file
+                    # Rotate the images 90 degrees
+                    imagePlotCropped = cv2.rotate(imagePlotCropped, cv2.ROTATE_90_CLOCKWISE)
+                    imagePlotCropped2 = cv2.rotate(imagePlotCropped2, cv2.ROTATE_90_CLOCKWISE)
+
+                    cv2.imwrite("C:/P3OutData/Example/Size/LenghtOrientation/{}SizeExtreme.png".format(fishID),
+                                imagePlotCropped)
+                    cv2.imwrite("C:/P3OutData/Example/Size/LenghtOrientation/{}SizeProper.png".format(fishID),
+                                imagePlotCropped2)
+                    # cv2.imwrite("C:/P3OutData/Example/Size/LenghtOrientation/{}SizeRGB.png".format(fishID), imagePlotOriginalCropped)
+
+                fishOrientation.append(angles)
+                averagePoints.append(averagePoint)
+                extremePoint1List.append(extremePoint1)
+                extremePoint2List.append(extremePoint2)
+                imagePlotAll = cv2.add(imagePlotAll, imagePlot)
 
         # print(fishLenght)
         # self.showImage([imagePlotAll])

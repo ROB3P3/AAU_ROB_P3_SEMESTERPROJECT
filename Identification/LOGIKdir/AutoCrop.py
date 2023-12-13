@@ -65,7 +65,6 @@ class Cropper:
             # This if statments only lets approxemetly vertical lines be saved
             if abs(y1 - y2) > 100 > abs(x1 - x2):
                 if self.minx > x0 > 550:
-                    #self.imgLines = self.imagePlot.copy()
                     self.minx = x0
                     cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
@@ -86,28 +85,13 @@ class Cropper:
                 # +70 to go from the outer edge on the conveyobelt to the eged by the conveyor bed. Found frome trial and error, the same goes for +1200
                 if x < self.minx + 70 or x > self.minx + 1220:
                     self.imgCropped[y][x] = 255
-        self.xStart = round(self.minx + 70)
-        self.xEnd = round(self.minx + 1220)
-
-        # fill the area between the lines with half transparent red
-        overlay = self.imagePlot.copy()
-        # area is not a rectangle, so we need to define the polygon points
-        pts = np.array([[self.xStart, 0], [self.xStart, 1080], [self.xEnd, 1080], [self.xEnd, 0]])
-        cv2.fillPoly(overlay, [pts], (255, 0, 0))
-        overlay = cv2.addWeighted(overlay, 0.5, self.imagePlot, 0.5, 0)
-        self.imagePlot = cv2.addWeighted(overlay, 0.5, self.imagePlot, 0.5, 0)
-
-        self.imagePlot = cv2.line(self.imagePlot, (self.xStart, 0), (self.xStart, 1080), (0, 0, 255), 5)
-        self.imagePlot = cv2.line(self.imagePlot, (self.xEnd, 0), (self.xEnd, 1080), (0, 0, 255), 5)
-        # export the image to downloads
-        #os.chdir(r"C:\Users\klump\Downloads")
-        #cv2.imwrite("AutoCropOutput.png", self.imagePlot)
-        #self.showImage([self.imagePlot])
-
+        self.xStart = self.minx + 70
+        self.xEnd = self.minx + 1220
         return self.minx
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+if False:
     # Test code
     image = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
     imageWarp = image.copy()
