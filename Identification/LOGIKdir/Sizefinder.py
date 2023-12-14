@@ -184,6 +184,7 @@ class SizeFinder:
         averagePoints = []
         extremePoint1List = []
         extremePoint2List = []
+        boundingBoxList = []
         # List of RGB colors to differentiate between blobs later
         colours = [(230, 63, 7), (48, 18, 59), (68, 81, 191), (69, 138, 252), (37, 192, 231), (31, 233, 175),
                    (101, 253, 105), (175, 250, 55), (227, 219, 56), (253, 172, 52), (246, 108, 25), (216, 55, 6),
@@ -258,6 +259,8 @@ class SizeFinder:
                                           [extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]],
                                           [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]],
                                           colours[i], 2)
+            boundingBox = [[extremePointLeftUncalibrated[0], extremePointTopUncalibrated[1]], [extremePointRightUncalibrated[0], extremePointBottomUncalibrated[1]]]
+            boundingBoxList.append(boundingBox)
             cv2.drawContours(imagePlotUncalibrated, separateContoursUncalibrated[i], -1, colours[i], -1)
 
             # Label blobs
@@ -398,4 +401,4 @@ class SizeFinder:
         # imagePath = imageData.imagePath
         # name = imagePath.rsplit('\\', 1)[-1]
         # cv2.imwrite("C:/FishProject/group_4/output/Size/Annontaded{}".format(name), imagePlotAll)
-        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated
+        return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated, boundingBoxList

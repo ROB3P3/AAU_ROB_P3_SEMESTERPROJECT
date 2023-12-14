@@ -67,6 +67,7 @@ class ImageData:
         self.fishAreas = sizeReturnList[8]
         self.annotatedImageUncalibrated = sizeReturnList[9]
         self.calibratedNotAnnotatedImage = sizeReturnList[10]
+        self.fishBoundingBoxes = sizeReturnList[11]
     
     def setAttributesFromGrippingPoints(self, gPointsOutput):
         self.fishGrippingPoints = gPointsOutput[0]
