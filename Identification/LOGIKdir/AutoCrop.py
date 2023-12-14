@@ -20,7 +20,6 @@ class Cropper:
             print(k)
 
     def setImage(self, image):
-
         self.imagePlot = image.copy()
         # convert to greyscale if needed
         if len(image.shape) > 2:
@@ -33,42 +32,78 @@ class Cropper:
         # self.imgGrey = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         self.imgEdges = cv2.Canny(self.img, 250, 400, apertureSize=3)
 
+
+        # write the image to a file
+        #os.chdir(r"C:\Users\klump\Downloads")
+        #cv2.imwrite("edges.png", self.imgEdges)
+        #self.showImage([self.imgEdges])
+
     def findVerticalLines(self):
-        self.imgLines = self.imagePlot.copy()
+        imgLines = self.finalLines.copy()
+        self.imgLines = imgLines.copy()
+        imgEdges = self.imgEdges
+        self.imgLines2 = imgEdges.copy()
+        self.imgLines2 = cv2.cvtColor(self.imgLines2, cv2.COLOR_GRAY2BGR)
         # Finds lines in the image based on edges
         self.Lines = cv2.HoughLines(self.imgEdges, 1.7, np.pi / 180, 220)
 
+        #self.Lines2 = cv2.HoughLinesP(self.imgEdges, 5, np.pi / 180, 220)
 
-        #self.Lines2 = cv2.HoughLinesP(self.imgEdges, 1.7, np.pi / 180, 220)
+        # Draw the houghlinesp
+        #for line in self.Lines2:
+        #    x1, y1, x2, y2 = line[0]
+        #    cv2.line(self.imgLines2, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        #    if abs(y1 - y2) > 100 > abs(x1 - x2):
+        #        if x1 > 550:
+        #            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
 
         self.minx = 9999
-        for i, r_theta in enumerate(self.Lines):
-            arr = np.array(r_theta[0], dtype=np.float64)
-            r, theta = arr
+        correctLines = 0
+        if self.Lines is not None:
+            for i, r_theta in enumerate(self.Lines):
+                arr = np.array(r_theta[0], dtype=np.float64)
+                r, theta = arr
 
-            a = np.cos(theta)  # Stores the value of cos(theta) in a
-            b = np.sin(theta)  # Stores the value of sin(theta) in b
 
-            x0 = a * r  # x0 stores the value rcos(theta)
-            y0 = b * r  # y0 stores the value rsin(theta)
 
-            x1 = int(x0 + 1200 * (-b))  # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
-            y1 = int(y0 + 1200 * (a))  # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
+                a = np.cos(theta)  # Stores the value of cos(theta) in a
+                b = np.sin(theta)  # Stores the value of sin(theta) in b
 
-            x2 = int(x0 - 1200 * (-b))  # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
-            y2 = int(y0 - 1200 * (a))  # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
+                x0 = a * r  # x0 stores the value rcos(theta)
+                y0 = b * r  # y0 stores the value rsin(theta)
 
-            # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
-            # (0,0,255) denotes the colour of the line to be
-            # drawn. In this case, it is red.
-            # This if statments only lets approxemetly vertical lines be saved
-            if abs(y1 - y2) > 100 > abs(x1 - x2):
-                if self.minx > x0 > 550:
-                    self.minx = x0
-                    cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                x1 = int(x0 + 1200 * (-b))  # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
+                y1 = int(y0 + 1200 * (a))  # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
 
-        #self.showImage([self.imgLines])
+                x2 = int(x0 - 1200 * (-b))  # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
+                y2 = int(y0 - 1200 * (a))  # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
+
+                # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
+                # (0,0,255) denotes the colour of the line to be
+                # drawn. In this case, it is red.
+                # This if statments only lets approxemetly vertical lines be saved
+                #cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                if abs(y1 - y2) > 100 > abs(x1 - x2):
+                    if self.minx > x0 > 550:
+                        # print if r or theta is negative
+                        correctLines += 1
+                        print("Found a line " + str(correctLines))
+                        if r < 0:
+                            print("r is "+ str(r))
+                            self.minx = x0
+                            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                        else:
+                            print("r is "+ str(r))
+                            self.minx = x0
+                            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 1)
+                        # convert theta to degrees
+                        theta = theta * 180 / np.pi
+                        print("theta is " + str(theta))
+
+
+
+        self.showImage([self.imgLines2])
 
 
 
@@ -76,6 +111,7 @@ class Cropper:
 
     def crop(self):
         # This function executes the corpping and creates and atribute: imgCropped
+        self.finalLines = self.imagePlot.copy()
         self.findEdges()
         self.findVerticalLines()
 
@@ -85,8 +121,19 @@ class Cropper:
                 # +70 to go from the outer edge on the conveyobelt to the eged by the conveyor bed. Found frome trial and error, the same goes for +1200
                 if x < self.minx + 70 or x > self.minx + 1220:
                     self.imgCropped[y][x] = 255
-        self.xStart = self.minx + 70
-        self.xEnd = self.minx + 1220
+        self.xStart = round(self.minx + 70)
+        self.xEnd = round(self.minx + 1230)
+
+        # Draw the lines on the image
+
+        self.finalLines = cv2.line(self.imgLines, (self.xStart, 0), (self.xStart, 1080), (255, 0, 0), 5)
+        self.finalLines = cv2.line(self.imgLines, (self.xEnd, 0), (self.xEnd, 1080), (255, 0,0), 5)
+
+        #self.showImage([self.finalLines])
+
+        # Writes the cropped image to a file
+        #os.chdir(r"C:\Users\klump\Downloads")
+
         return self.minx
 
 

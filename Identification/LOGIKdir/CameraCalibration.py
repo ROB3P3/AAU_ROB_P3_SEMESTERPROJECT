@@ -3,7 +3,7 @@ import cv2
 import glob
 import os
 #from LOGIKdir.AutoCrop import Cropper as AutoCrop
-from LOGIKdir.AutoCrop import Cropper as AutoCrop
+from Identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
 #from Identification.LOGIKdir.Sizefinder import SizeFinder
 
 
@@ -43,7 +43,7 @@ class ImageCalibrator:
         # Change to use automatic detection of points.
         orignalPoints = np.float32([[leftX1, 0], [leftX2, 1080], [rightX1, 0], [rightX2, 1080]])
         # What the originalPoints new values should be in the perspective warped image
-        newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
+        newPoints = np.float32([[0, 0], [0, 1080], [1180, 0], [1180, 1080]])
         # Warp all checkerboard images and put them in their own folder.
         # print("Warping perspective of {}.".format(fileName))
         warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
@@ -70,7 +70,9 @@ class ImageCalibrator:
         objectPoints3D = np.zeros((boardShape[0] * boardShape[1], 3), np.float32)
         objectPoints3D[:, :2] = np.mgrid[0:boardShape[0], 0:boardShape[1]].T.reshape(-1, 2)
 
-        #print("Preparing objectPoints3D: ", objectPoints3D)
+        # Go through each 3D point and multiply by 40 to get the real size of the checkerboard.
+        objectPoints3D *= 40
+        print("objectPoints3D: ", objectPoints3D)
 
         print("Finding checkerboards in images...", calibrationPath)
         for i, fileName in enumerate(calibrationPath):
@@ -81,7 +83,7 @@ class ImageCalibrator:
             if i == 0:
                 # Warp perspective of board
                 warpMatrix = self.WarpPerspective(image, name)
-            image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
+            image = cv2.warpPerspective(image, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
             print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
@@ -105,11 +107,11 @@ class ImageCalibrator:
                 points2D.append(corners2)
 
                 # Draw and display the corners
-                #imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
+                imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
                 #self.showImage([imageDrawn])
-                #newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
-                #print("Writing to: ", newFileName)
-                #cv2.imwrite(newFileName, imageDrawn)
+                newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
+                print("Writing to: ", newFileName)
+                cv2.imwrite(newFileName, imageDrawn)
 
             else:
                 print("Can't find enough corners in {}.".format(name))
@@ -138,7 +140,7 @@ class ImageCalibrator:
         print(translationVector)
 
         # Get new camera matrix
-        height, width = image.shape[:2]
+        height, width = (1080, 1080)
         newCameraMatrix, regionsOfInterest = cv2.getOptimalNewCameraMatrix(matrix, distortion, (width, height), 1,
                                                                            (width, height))
 
@@ -163,8 +165,8 @@ class ImageCalibrator:
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
         # Get warp matrix to perspective transform the images.
         warpMatrix = self.WarpPerspective(imageRGB)
-        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
-        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
+        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
         #self.showImage([imageRGB, imageBlobsWarped])
 
@@ -190,26 +192,26 @@ class ImageCalibrator:
         return [imageRGBUndistorted, imageBlobsUndistorted]
 
 
-#if __name__ == "__main__":
-if False:
+if __name__ == "__main__":
     groups = [4]#, 9, 15, 19]
     calibrator = ImageCalibrator()
-    sizeFinder = SizeFinder()
+    #sizeFinder = SizeFinder()
     for group in groups:
         print("Running calibration for group {}".format(group))
-        imageBlobs = cv2.imread(r"C:\P3OutData\Merged\group_4\FinalTH\00002Final.png", cv2.IMREAD_UNCHANGED)
-        imageRGB = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
+        imageBlobs = cv2.imread(r"C:\P3OutData\Merged\group_{}\FinalTH\00002Final.png".format(group), cv2.IMREAD_UNCHANGED)
+        imageRGB = cv2.imread(r"C:\FishProject\group_{}\rs\rgb\00002.png".format(group), cv2.IMREAD_UNCHANGED)
 
-        calibrationImages = glob.glob(r"C:\FishProject\group_4\calibration\rs\*.png")
+        calibrationImages = glob.glob(r"C:\FishProject\group_{}\calibration\rs\*.png".format(group))
         calibration = calibrator.getImageCalibration(calibrationImages)
         #calibrated = calibrator.calibrateImage(imageRGB, imageBlobs, calibration)
-        calibrationImagesOutput = glob.glob(r"C:\P3OutData\Example\Checkerboard\*Uncalibrated.png")
+        calibrationImagesOutput = glob.glob(r"C:\FishProject\group_{}\calibration\rs\*.png".format(group))
         for image in calibrationImagesOutput:
             name = image.rsplit('\\', 1)[-1]
             name = name.rsplit('.', 1)[0]
             name = name.rsplit('Uncalibrated', 1)[0]
-            print("Calibrating {}".format(name))
-            image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
-            images = calibrator.calibrateImage(image, image, calibration)
-            cv2.imwrite(r"C:\P3OutData\Example\Checkerboard\{}xCalibrated.png".format(name), images[0])
+            if name == "00025":
+                print("Calibrating {}".format(name))
+                image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
+                images = calibrator.calibrateImage(image, image, calibration)
+                cv2.imwrite(r"C:\P3OutData\Example\Checkerboard\{}xCalibrated.png".format(name), images[0])
 
