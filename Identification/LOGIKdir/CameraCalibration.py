@@ -10,6 +10,7 @@ from Identification.LOGIKdir.AutoCrop import Cropper as AutoCrop
 class ImageCalibrator:
     def __init__(self) -> None:
         print("ImageCalibrator initialized:")
+        self.image = None
 
     def clearDirectory(self, path):
         """Delete all files in the given folder"""
@@ -33,17 +34,38 @@ class ImageCalibrator:
         Takes a PNG image and warps it to a 1080x1080 pixel image containing only the conveyor."""
         AutoCropper = AutoCrop()
         AutoCropper.setImage(image)
-        minX = AutoCropper.crop()
+        minX = round(AutoCropper.crop())
         leftX1 = minX + 67
         leftX2 = minX + 70
         rightX1 = minX + 1235
         rightX2 = minX + 1270
 
+        # draw the lines
+        if self.image is not None:
+            imagePlot = self.image
+            #cv2.line(imagePlot, (leftX1, 0), (leftX1, 1080), (255, 0, 0), 5)
+            #cv2.line(imagePlot, (rightX1, 0), (rightX1, 1080), (255, 0, 0), 5)
+            #cv2.line(imagePlot, (leftX1, 0), (leftX2, 1080), (0, 0, 255), 4)
+            #cv2.line(imagePlot, (rightX1, 0), (rightX2, 1080), (0, 0, 255), 4)
+
+            # draw the ponts
+            size = 10
+            cv2.circle(imagePlot, (leftX1, 0), size, (0, 255, 0), -1)
+            cv2.circle(imagePlot, (leftX2, 1080), size, (0, 255, 0), -1)
+            cv2.circle(imagePlot, (rightX1, 0), size, (0, 255, 0), -1)
+            cv2.circle(imagePlot, (rightX2, 1080), size, (0, 255, 0), -1)
+
+            # write the image to file
+            newFileName = "C:/Users/klump/Downloads/CorrectedLines.png"
+            print("Writing to: ", newFileName)
+            cv2.imwrite(newFileName, imagePlot)
+            self.showImage([imagePlot])
+
         # Points in the orignal image indicating where to warp perspective to.
         # Change to use automatic detection of points.
         orignalPoints = np.float32([[leftX1, 0], [leftX2, 1080], [rightX1, 0], [rightX2, 1080]])
         # What the originalPoints new values should be in the perspective warped image
-        newPoints = np.float32([[0, 0], [0, 1080], [1180, 0], [1180, 1080]])
+        newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
         # Warp all checkerboard images and put them in their own folder.
         # print("Warping perspective of {}.".format(fileName))
         warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
@@ -72,7 +94,7 @@ class ImageCalibrator:
 
         # Go through each 3D point and multiply by 40 to get the real size of the checkerboard.
         objectPoints3D *= 40
-        print("objectPoints3D: ", objectPoints3D)
+        #print("objectPoints3D: ", objectPoints3D)
 
         print("Finding checkerboards in images...", calibrationPath)
         for i, fileName in enumerate(calibrationPath):
@@ -83,7 +105,7 @@ class ImageCalibrator:
             if i == 0:
                 # Warp perspective of board
                 warpMatrix = self.WarpPerspective(image, name)
-            image = cv2.warpPerspective(image, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+            image = cv2.warpPerspective(image, warpMatrix, (1080, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
             print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
@@ -107,11 +129,11 @@ class ImageCalibrator:
                 points2D.append(corners2)
 
                 # Draw and display the corners
-                imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
+                #imageDrawn = cv2.drawChessboardCorners(image, boardShape, corners2, retval)
                 #self.showImage([imageDrawn])
-                newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
-                print("Writing to: ", newFileName)
-                cv2.imwrite(newFileName, imageDrawn)
+                #newFileName = "C:/P3OutData/Example/Checkerboard/{}Uncalibrated.png".format(name)
+                #print("Writing to: ", newFileName)
+                #cv2.imwrite(newFileName, imageDrawn)
 
             else:
                 print("Can't find enough corners in {}.".format(name))
@@ -161,12 +183,17 @@ class ImageCalibrator:
         # Clear both output folders
         # clearDirectory(outputPathFish.format("*"))
         # clearDirectory(outputPathCalibration.format("*"))
+        self.image = imageRGB
 
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
         # Get warp matrix to perspective transform the images.
-        warpMatrix = self.WarpPerspective(imageRGB)
-        imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1180, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        warpMatrix = self.WarpPerspective(self.image)
+        self.image = cv2.warpPerspective(self.image, warpMatrix, (1080, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        #newFileName = "C:/Users/klump/Downloads/CorrectedPerspective.png"
+        #print("Writing to: ", newFileName)
+        #cv2.imwrite(newFileName, self.image)
+        #self.showImage([self.image])
+        imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
         #self.showImage([imageRGB, imageBlobsWarped])
 

@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+import pandas as pd
+import time
 
 
 class Cropper:
@@ -27,16 +30,16 @@ class Cropper:
         self.img = image
         y, x = image.shape
         self.imgCropped = np.zeros((y, x))
+        self.finalLines = self.imagePlot.copy()
 
     def findEdges(self):
         # self.imgGrey = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         self.imgEdges = cv2.Canny(self.img, 250, 400, apertureSize=3)
 
-
         # write the image to a file
-        #os.chdir(r"C:\Users\klump\Downloads")
-        #cv2.imwrite("edges.png", self.imgEdges)
-        #self.showImage([self.imgEdges])
+        # os.chdir(r"C:\Users\klump\Downloads")
+        # cv2.imwrite("edges.png", self.imgEdges)
+        # self.showImage([self.imgEdges])
 
     def findVerticalLines(self):
         imgLines = self.finalLines.copy()
@@ -45,18 +48,21 @@ class Cropper:
         self.imgLines2 = imgEdges.copy()
         self.imgLines2 = cv2.cvtColor(self.imgLines2, cv2.COLOR_GRAY2BGR)
         # Finds lines in the image based on edges
+        timeHough = time.time()
         self.Lines = cv2.HoughLines(self.imgEdges, 1.7, np.pi / 180, 220)
+        print("Time for Hough: ", time.time() - timeHough)
+        print("Lines found: \n", (self.Lines))
+        print("Amount of lines: " + str(len(self.Lines)))
 
-        #self.Lines2 = cv2.HoughLinesP(self.imgEdges, 5, np.pi / 180, 220)
+
 
         # Draw the houghlinesp
-        #for line in self.Lines2:
+        # for line in self.Lines2:
         #    x1, y1, x2, y2 = line[0]
         #    cv2.line(self.imgLines2, (x1, y1), (x2, y2), (255, 0, 0), 2)
         #    if abs(y1 - y2) > 100 > abs(x1 - x2):
         #        if x1 > 550:
         #            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (255, 0, 0), 2)
-
 
         self.minx = 9999
         correctLines = 0
@@ -65,7 +71,10 @@ class Cropper:
                 arr = np.array(r_theta[0], dtype=np.float64)
                 r, theta = arr
 
-
+                # convert theta to degrees
+                #thetaDegree = theta * 180 / np.pi
+                # plot the houghlines parameters
+                #plt.plot(r, thetaDegree, 'o')
 
                 a = np.cos(theta)  # Stores the value of cos(theta) in a
                 b = np.sin(theta)  # Stores the value of sin(theta) in b
@@ -83,35 +92,35 @@ class Cropper:
                 # (0,0,255) denotes the colour of the line to be
                 # drawn. In this case, it is red.
                 # This if statments only lets approxemetly vertical lines be saved
-                #cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                if abs(y1 - y2) > 100 > abs(x1 - x2):
-                    if self.minx > x0 > 550:
-                        # print if r or theta is negative
-                        correctLines += 1
-                        print("Found a line " + str(correctLines))
-                        if r < 0:
-                            print("r is "+ str(r))
-                            self.minx = x0
-                            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                        else:
-                            print("r is "+ str(r))
-                            self.minx = x0
-                            cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 1)
-                        # convert theta to degrees
-                        theta = theta * 180 / np.pi
-                        print("theta is " + str(theta))
+                # cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                #if abs(y1 - y2) > 100 > abs(x1 - x2):
+                thetaDegree = theta * 180 / np.pi
+                if abs(y1 - y2) > 50 > abs(x1 - x2):
+                    #if self.minx > x0 > 550:
+                    # draw the line on the image
+                    cv2.line(self.imgLines, (x1, y1), (x2, y2), (0, 255, 0), 8)
+                    # print if r or theta is negative
+                    correctLines += 1
+                    print("Found a line " + str(correctLines))
+                    if r < 0:
+                        print("r is " + str(r))
+                        self.minx = x0
+                        cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                    else:
+                        print("r is " + str(r))
+                        self.minx = x0
+                        cv2.line(self.imgLines2, (x1, y1), (x2, y2), (0, 0, 255), 1)
+                    # convert theta to degrees
+                    print("theta is " + str(thetaDegree))
 
-
-
-        self.showImage([self.imgLines2])
-
-
-
-
+        #plt.show()
+        # write the image to a file
+        os.chdir(r"C:\Users\klump\Downloads")
+        cv2.imwrite("linesFiltered.png", self.imgLines)
+        self.showImage([self.imgLines])
 
     def crop(self):
         # This function executes the corpping and creates and atribute: imgCropped
-        self.finalLines = self.imagePlot.copy()
         self.findEdges()
         self.findVerticalLines()
 
@@ -127,17 +136,17 @@ class Cropper:
         # Draw the lines on the image
 
         self.finalLines = cv2.line(self.imgLines, (self.xStart, 0), (self.xStart, 1080), (255, 0, 0), 5)
-        self.finalLines = cv2.line(self.imgLines, (self.xEnd, 0), (self.xEnd, 1080), (255, 0,0), 5)
+        self.finalLines = cv2.line(self.imgLines, (self.xEnd, 0), (self.xEnd, 1080), (255, 0, 0), 5)
 
-        #self.showImage([self.finalLines])
+        # self.showImage([self.finalLines])
 
         # Writes the cropped image to a file
-        #os.chdir(r"C:\Users\klump\Downloads")
+        # os.chdir(r"C:\Users\klump\Downloads")
 
         return self.minx
 
 
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 if False:
     # Test code
     image = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
@@ -173,8 +182,8 @@ if False:
         imageThreshold = cv2.addWeighted(overlay, 0.5, imageThreshold, 0.5, 0)
 
         # export the image to downloads
-        #os.chdir(r"C:\Users\klump\Downloads")
-        #cv2.imwrite("test.png", image)
+        # os.chdir(r"C:\Users\klump\Downloads")
+        # cv2.imwrite("test.png", image)
         cv2.imshow("warp", imageWarp)
         cv2.imshow("threshold", imageThreshold)
         cv2.waitKey(0)
