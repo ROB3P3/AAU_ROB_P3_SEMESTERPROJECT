@@ -102,6 +102,11 @@ class Classifier:
         """ cm = confusion_matrix(valSpeciesArray, yPrediction, labels=gausClassifier.classes_)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=gausClassifier.classes_)
         disp.plot()
+        plt.show()
+        
+        normCM = confusion_matrix(valSpeciesArray, yPrediction, labels=gausClassifier.classes_, normalize='pred')
+        disp = ConfusionMatrixDisplay(confusion_matrix=normCM,display_labels=gausClassifier.classes_)
+        disp.plot()
         plt.show() """
         
         return gausClassifier

@@ -155,7 +155,7 @@ def logicHandle(pathInputRoot, groups):
     startTime = time.time()
     
     clf = Classifier()
-    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/annotated_training_data.csv", "./Identification/DATAdir/annotated_validation_data.csv")
+    gaussianClassifer = clf.createClassifier("./Identification/DATAdir/annotations_training_data.csv", "./Identification/DATAdir/annotated_output_testing_data.csv")
 
     for group in groups:
         ########################################### Setup params ##############################################

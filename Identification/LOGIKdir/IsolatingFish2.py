@@ -56,6 +56,7 @@ class Thresholder:
                 
         # Converts the image to the range [0, 255]
         image = (image * 255).astype('uint8')
+        
         return image, imageZ
 
     def thresholdImageBlue(self, image):
@@ -100,6 +101,7 @@ class Thresholder:
         # Fills holes 
         filledImage = self.fillHoles(medianBlurImage2)
         imageData.setColourThresholdedImage(filledImage)
+        
         return filledImage
 
     def thresholdDepthMap(self, imageData):
@@ -159,7 +161,7 @@ class Thresholder:
         avgZ = avgZ / avgZPoints
         
         # Y-rotation is scaled on the average z-value in the ROI
-        rotY = 1 + (((2.2 - 1) / abs(11.15 - 11.07)) * (avgZ - 11.07))
+        rotY = 1 + (((2.2 - 1) / (11.15 - 11.07)) * (avgZ - 11.07))
         rgbDepthPointCloud.rotate(rgbDepthPointCloud.get_rotation_matrix_from_xyz((np.pi*(3/180), np.pi*(rotY/180), 0)))
         
         # Thresholds the pointcloud to segment the fish
@@ -190,7 +192,7 @@ class Thresholder:
         # Visualizer to show thresholded pointcloud
         # Uncomment to view visualizer
         """ vis = o3d.visualization.Visualizer()
-        vis.create_window(window_name=path)
+        vis.create_window(window_name=str(imageData.index))
         vis.add_geometry(rgbDepthPointCloud)
         vis.add_geometry(coordinateFrame)
         vis.get_view_control().convert_from_pinhole_camera_parameters(o3d.io.read_pinhole_camera_parameters("C:/Users/takek/Dropbox/PC (3)/Documents/University/Semester 3/P3/Project/ScreenCamera_2023-11-17-12-48-01.json"))
@@ -209,17 +211,17 @@ class Thresholder:
         imageGraBlur = cv2.medianBlur(imageGray,7)
 
         # udgangspunkt var 90, 190
-        imageEdgeBlur = cv2.Canny(imageGraBlur,60,190)
-
+        imageEdgeBlur = cv2.Canny(imageGraBlur,60,190)        
         element = cv2.getStructuringElement(1, (2 * 2 + 1, 2 * 2 + 1),
                                             (2, 2))
+        
         imageEdgeBlurDilated = cv2.dilate(imageEdgeBlur,element)
-
+        
         return imageEdgeBlurDilated
 
     def seperate(self, imageThreshold, imageEdges):
         image = cv2.subtract(imageThreshold,imageEdges)
-
+        
         element = cv2.getStructuringElement(1, (2 * 1 + 1, 2 * 1 + 1),
                                                 (1, 1))
         imageErode = cv2.erode(image,element)
