@@ -150,9 +150,5 @@ class ImageCalibrator:
         imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
         ret, imageBlobsUndistorted = cv2.threshold(imageBlobsUndistorted, 200, 255, 0)
 
-        # writes the cropped image to a file in an example folder
-        os.chdir(r"C:\P3OutData\StepbyStep\Warp and Calibrate")
-        cv2.imwrite("imageRGBUndistorted.png", imageRGBUndistorted)
-        cv2.imwrite("imageBlobsUndistorted.png", imageBlobsUndistorted)
 
         return [imageRGBUndistorted, imageBlobsUndistorted]

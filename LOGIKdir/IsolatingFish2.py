@@ -278,7 +278,5 @@ class Thresholder:
         cv2.imwrite(str(imageData.index).zfill(5) + "DepthTH.png", imageData.depthThresholding)
         os.chdir("{}/group_{}/FinalTH".format(outputDataRootPath, imageData.group))
         cv2.imwrite(str(imageData.index).zfill(5) + "Final.png", imageData.seperatedThresholdedImage)
-        # writes the cropped image to a file in an example folder
-        os.chdir(r"C:\P3OutData\StepbyStep\Threshold")
-        cv2.imwrite("Thresholded.png", imageData.seperatedThresholdedImage)
+
         return (imageData.seperatedThresholdedImage)

@@ -1,18 +1,16 @@
 import os
 import cv2
 import numpy as np
-from DATAdir.data import ImageData
 
 
 class Cropper:
-    """The class wich crops the images on the provided file path (skal måske laves om til at køre på img fra tidligere kode i stedet)"""
+    """The class which crops the image to only contain the conveyor belt."""
 
     def __init__(self):
         self.img = 0
         self.imgCropped = 0
 
     def setImage(self, image):
-        self.imageOutput = image.copy()
         # convert to greyscale if needed
         if len(image.shape) > 2:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -68,12 +66,5 @@ class Cropper:
                     self.imgCropped[y][x] = 255
         self.xStart = self.minx + 70
         self.xEnd = self.minx + 1220
-
-        # draws a line on the image to show where the image is cropped
-        cv2.line(self.imageOutput, (self.xStart, 0), (self.xStart, 1080), (0, 0, 255), 5)
-        cv2.line(self.imageOutput, (self.xEnd, 0), (self.xEnd, 1080), (0, 0, 255), 5)
-        # writes the cropped image to a file in the download folder
-        os.chdir(r"C:\P3OutData\StepbyStep\Crop")
-        cv2.imwrite("Cropped.png", self.imageOutput)
 
         return self.minx

@@ -355,8 +355,5 @@ class SizeFinder:
             imagePlotAll = cv2.add(imagePlotAll, imagePlot)
             imagePlotAllNotAnnotated = cv2.add(imagePlotAllNotAnnotated, imagePlotNotAnnotated)
 
-        # write the image to a file
-        os.chdir(r"C:\P3OutData\StepbyStep\Length Calculation")
-        cv2.imwrite("LengthCalculation.png", imagePlotAll)
 
         return fishLenght, fishOrientation, imagePlotAll, originalImage, averagePoints, separateContoursUncalibrated, extremePoint1List, extremePoint2List, fishAreas, imagePlotUncalibrated, imagePlotAllNotAnnotated, boundingBoxList

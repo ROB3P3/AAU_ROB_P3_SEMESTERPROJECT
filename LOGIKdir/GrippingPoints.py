@@ -95,7 +95,5 @@ class GrippingPoints:
             grippingPoints.append(grippingPoint)
             fishWidths.append(width)
 
-            # write the image to a file
-            os.chdir(r"C:\P3OutData\StepbyStep\Grasping Point generation")
-            cv2.imwrite("GraspingPoints.png", gripImage)
+
         return grippingPoints, fishWidths, gripImage
