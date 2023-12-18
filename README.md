@@ -1,11 +1,10 @@
 # AAU_ROB_P3_SEMESTERPROJECT
 Semester project of ROB3 366 2023
 
-GUIdir contains the files used for making the GUI's
+Identification.py is the main file for the identification subsystem. Run this file to initiate the GUI.
 
-LOGIKdir contains the directories that contains the files for the identification and documentation subsystems
+GUIdir contains the files used for creating and running the GUI's
 
-Under LOGIKdir, benchmark contains the files used for YOLO algorithm, which is used as a benchmark for our solution
+LOGIKdir contains the directories that with the files for the fish classification process
 
-
-DATAdir contains the images used for identification
+DATAdir contains the annotated data used for training the fish classification model, as well as the data object used for storing the data extracted from the identification process

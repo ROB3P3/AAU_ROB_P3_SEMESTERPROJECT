@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import glob
 import os
-#from LOGIKdir.AutoCrop import Cropper as AutoCrop
+# from LOGIKdir.AutoCrop import Cropper as AutoCrop
 from LOGIKdir.AutoCrop import Cropper as AutoCrop
 from LOGIKdir.Sizefinder import SizeFinder
 
@@ -45,7 +45,6 @@ class ImageCalibrator:
         # What the originalPoints new values should be in the perspective warped image
         newPoints = np.float32([[0, 0], [0, 1080], [1080, 0], [1080, 1080]])
         # Warp all checkerboard images and put them in their own folder.
-        # print("Warping perspective of {}.".format(fileName))
         warpMatrix = cv2.getPerspectiveTransform(orignalPoints, newPoints)
         # Use the values from above to warp the image to a 1080x1080 pixel image.
         return warpMatrix
@@ -82,8 +81,6 @@ class ImageCalibrator:
             print("Finding Checkerboards for {}".format(name))
             # Convert to greyscale
             grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            #grayColor = image
-
 
             # Find the chess board corners
             # If desired number of corners are found in the image then retval = true
@@ -104,7 +101,6 @@ class ImageCalibrator:
                 # showImage([imageDrawn])
             else:
                 print("Can't find enough corners in {}.".format(name))
-                # showImage([image])
 
         # Perform camera calibration by passing the value of above found out 3D points (points3D)
         # and its corresponding pixel coordinates of the detected corners (points2D)
@@ -135,54 +131,23 @@ class ImageCalibrator:
 
     def calibrateImage(self, imageRGB, imageBlobs, calibrationValues):
         """Apllies the calibration values found in getImageCalibration() to the images in the group"""
-        # Clear output folder to ensure only the newest files.
-        # outputPathFish = outputPath + "WarpedCalibratedFish/{}"
-        # outputPathCalibration = outputPath + "WarpedCalibratedCheckerboard/{}"
-        # Clear both output folders
-        # clearDirectory(outputPathFish.format("*"))
-        # clearDirectory(outputPathCalibration.format("*"))
-
 
         retval, matrix, distortion, rotationVector, translationVector, newCameraMatrix, regionsOfInterest = calibrationValues
         # Get warp matrix to perspective transform the images.
         warpMatrix = self.WarpPerspective(imageRGB)
+        # Warp the images using the warp matrix.
         imageRGB = cv2.warpPerspective(imageRGB, warpMatrix, (1080, 1080))
-
-        #cv2.imshow("Blob before warp", imageBlobs)
         imageBlobsWarped = cv2.warpPerspective(imageBlobs, warpMatrix, (1080, 1080))
-        #cv2.imshow("Blob after warp", imageBlobs)
-        #cv2.waitKey(0)
 
-        # Calibrate the warped image of fish.
-        #print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
+        # Calibrate the warped image.
+        # print("Calibrating {} image {}.".format(imagePath.rsplit("/", 1)[-2], name))
         imageRGBUndistorted = cv2.undistort(imageRGB, matrix, distortion, None, newCameraMatrix)
         imageBlobsUndistorted = cv2.undistort(imageBlobsWarped, matrix, distortion, None, newCameraMatrix)
 
-        # Crop image to region of interest
+        # Crop image to region of interest.
         x, y, width, height = regionsOfInterest
         imageRGBUndistorted = imageRGBUndistorted[y:y + height, x:x + width]
         imageBlobsUndistorted = imageBlobsUndistorted[y:y + height, x:x + width]
         ret, imageBlobsUndistorted = cv2.threshold(imageBlobsUndistorted, 200, 255, 0)
 
-        #self.showImage([imageBlobs, imageBlobsUndistorted])
-        # newFileName = outputPathCalibration.format("calibrated" + fileName.rsplit('\\', 1)[-1])
-        # print("Writing to: ", newFileName)
-        # cv2.imwrite(newFileName, imageUndistorted)
-
         return [imageRGBUndistorted, imageBlobsUndistorted]
-
-
-"""if __name__ == "__main__":
-    groups = [4]#, 9, 15, 19]
-    calibrator = ImageCalibrator()
-    sizeFinder = SizeFinder()
-    for group in groups:
-        print("Running calibration for group {}".format(group))
-        imageBlobs = cv2.imread(r"C:\P3OutData\Merged\group_4\FinalTH\00002Final.png", cv2.IMREAD_UNCHANGED)
-        imageRGB = cv2.imread(r"C:\FishProject\group_4\rs\rgb\00002.png", cv2.IMREAD_UNCHANGED)
-
-        calibrationImages = glob.glob(r"C:\FishProject\group_4\calibration\rs\*.png")
-        calibration = calibrator.getImageCalibration(calibrationImages)
-        calibrated = calibrator.calibrateImage(imageRGB, imageBlobs, calibration)
-        sizeFinder.findSize(calibrated[1], calibrated[0])
-        break"""
