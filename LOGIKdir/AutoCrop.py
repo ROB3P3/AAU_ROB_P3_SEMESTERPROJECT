@@ -66,8 +66,8 @@ class Cropper:
                 # +70 to go from the outer edge on the conveyobelt to the eged by the conveyor bed. Found frome trial and error, the same goes for +1200
                 if x < self.minx + 70 or x > self.minx + 1220:
                     self.imgCropped[y][x] = 255
-        self.xStart = self.minx + 70
-        self.xEnd = self.minx + 1220
+        self.xStart = round(self.minx + 70)
+        self.xEnd = round(self.minx + 1220)
 
         # draws a line on the image to show where the image is cropped
         cv2.line(self.imageOutput, (self.xStart, 0), (self.xStart, 1080), (0, 0, 255), 5)

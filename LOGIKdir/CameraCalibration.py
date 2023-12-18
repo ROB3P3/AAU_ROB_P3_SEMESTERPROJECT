@@ -70,12 +70,13 @@ class ImageCalibrator:
         objectPoints3D[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
         print("Finding checkerboards in images...", calibrationPath)
-        for fileName in calibrationPath:
+        for i, fileName in enumerate(calibrationPath):
             name = fileName.rsplit('\\', 1)[-1]
             image = cv2.imread(fileName)
 
             # Warp perspective of board
-            warpMatrix = self.WarpPerspective(image, name)
+            if i == 0:
+                warpMatrix = self.WarpPerspective(image, name)
             image = cv2.warpPerspective(image, warpMatrix, (1080, 1080))
 
             print("Finding Checkerboards for {}".format(name))

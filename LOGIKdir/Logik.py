@@ -38,6 +38,22 @@ def pathingSetup(group, rootPath):
     if not os.path.exists("{}/group_{}/Results".format(rootPath, group)):
         os.makedirs("{}/group_{}/Results".format(rootPath, group))
 
+    # step by step output folders
+    if not os.path.exists("{}/StepbyStep".format(rootPath)):
+        os.makedirs("{}/StepbyStep".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/BLOB detection".format(rootPath)):
+        os.makedirs("{}/StepbyStep/BLOB detection".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/Crop".format(rootPath)):
+        os.makedirs("{}/StepbyStep/Crop".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/Grasping Point generation".format(rootPath)):
+        os.makedirs("{}/StepbyStep/Grasping Point generation".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/Length calculation".format(rootPath)):
+        os.makedirs("{}/StepbyStep/Length calculation".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/Threshold".format(rootPath)):
+        os.makedirs("{}/StepbyStep/Threshold".format(rootPath))
+    if not os.path.exists("{}/StepbyStep/Warp and Calibrate".format(rootPath)):
+        os.makedirs("{}/StepbyStep/Warp and Calibrate".format(rootPath))
+
 
 def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, TH, sizeFinder, grippingPoints,
                  classifierClass, gaussianClassifier, calibrationValues):
@@ -92,6 +108,8 @@ def taskHandeler(indexFileNameList, startingNumber, group, outputDataRootPath, T
                 csvDictWriter = csv.DictWriter(file, csvHeader)
                 csvDictWriter.writeheader()
                 csvDictWriter.writerows(collectedFishOutput)
+
+            break
 
 
 
@@ -165,7 +183,7 @@ def logicHandle(pathInputRoot, groups):
         images = glob.glob("{}/group_{}/rs/rgb/*.png".format(pathInputRoot, group))[:45]
         calibrationImages = glob.glob("{}/group_{}/calibration/rs/*.png".format(pathInputRoot, group))
         outputDataRootPath = "C:/P3OutData/Merged"  # where you want the program to create it's data folders (could be defined in GUI TBD)
-        numberOfThreads = mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
+        numberOfThreads = 1#mp.cpu_count()  # Sets the amount of threads to use to match the threads on the computers CPU
         picturesPerGroup = len(images)
         ########################################### Setup params END #########################################
         pathingSetup(group, outputDataRootPath)
