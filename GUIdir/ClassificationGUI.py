@@ -4,8 +4,6 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter.ttk import Progressbar
 from tkinter.ttk import Label as ttkLabel
-#from Identification.DATAdir import DatabaseHandler as DatabaseHandler
-import DATAdir.DatabaseHandler as DatabaseHandler
 import os
 import LOGIKdir.Logik as Logik
 from multiprocessing import freeze_support
@@ -33,13 +31,13 @@ class Main(Tk):
 
     def show_frame(self, page_name):
         if page_name == "StartPage":
-            self.title("Identification: Main Menu")
+            self.title("Classification: Main Menu")
             self.geometry("1000x800")
         elif page_name == "PageOne":
-            self.title("Identification: Select groups to identify")
+            self.title("Classification: Select groups to identify")
             self.geometry("1000x800")
         elif page_name == "PageTwo":
-            self.title("Identification: Showing Progess...")
+            self.title("Classification: Showing Progess...")
             self.geometry("1000x800")
         # Show a frame for the given page name
         frame = self.frames[page_name]
@@ -64,7 +62,7 @@ class StartPage(Frame):
         # to prevents user from validating one oath and then changing the path without validating again.
         self.modifiedEntry = False
 
-        self.titleText = Label(self, font=("Arial", "40"), text="Fish Identification", bg="royalblue2", fg="black")
+        self.titleText = Label(self, font=("Arial", "40"), text="Fish Classification", bg="royalblue2", fg="black")
         self.titleText.place(relx=0.5, rely=0.10, anchor=CENTER)
         self.startButton = Button(self, text="Select Groups", command=lambda: self.start(), font=("Arial", "25"), bg="black", fg="white")
         self.startButton.place(relx=0.5, rely=0.75, anchor=CENTER)
@@ -274,7 +272,7 @@ class PageOne(Frame):
         self.deselectAllButton.place(relx=0.6, rely=0.7, anchor=CENTER)
 
         # Button to start identification process
-        self.startButton = Button(self, text="Start", command=lambda: self.startIdentification(),
+        self.startButton = Button(self, text="Start", command=lambda: self.startClassification(),
                                   font=("Arial", "25"), bg="black", fg="white")
         self.startButton.place(relx=0.5, rely=0.9, anchor=CENTER)
 
@@ -284,7 +282,7 @@ class PageOne(Frame):
             self.groupList.insert(END, str(group))
             # self.groupList.itemconfig(str(group), bg="lime")
 
-    def startIdentification(self): ###################################################################################### Starts the ID process
+    def startClassification(self): ###################################################################################### Starts the ID process
         """Start identification process"""
         print("Starting identification")
         self.selectedGroups = []
@@ -297,7 +295,7 @@ class PageOne(Frame):
         
         #self.controller.show_frame("PageTwo") # here the update progress page is called to display
 
-        # starts the Identification process for the selected groups
+        # starts the Classification process for the selected groups
         Logik.logicStart(self.controller.frames["StartPage"].path, self.selectedGroups)
 
 
