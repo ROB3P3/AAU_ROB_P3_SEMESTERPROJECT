@@ -177,10 +177,6 @@ class SizeFinder:
         image = cv2.erode(contoursDrawn, np.ones((3, 3), np.uint8), iterations=1)
         image = cv2.dilate(image, np.ones((3, 3), np.uint8), iterations=1)
 
-        # writes the cropped image to a file in an example folder
-        os.chdir(r"C:\P3OutData\StepbyStep\BLOB detection")
-        cv2.imwrite("BLOBdetection.png", image)
-
         yUncalibrated = imageOriginal.shape[0]
         xUncalibrated = imageOriginal.shape[1]
         blankImageUncalibrated = np.zeros((yUncalibrated, xUncalibrated), np.uint8)
